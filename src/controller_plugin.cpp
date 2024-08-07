@@ -52,12 +52,17 @@ bool Controller::init(hardware_interface::RobotHW* robot_hw,
                       ros::NodeHandle& root_nh,
                       ros::NodeHandle& controller_nh)
 {
-  ROS_DEBUG_NAMED(CLASS_NAME,"Initialize");
+  ROS_INFO_NAMED(CLASS_NAME,"Initialize controller plugin");
+
+  if(!robot_hw)
+  {
+    ROS_ERROR_NAMED(CLASS_NAME,"hardware_interface::RobotHW is a null pointer!");
+    return false;
+  }
 
   nh_ = controller_nh; // /robot_name/wolf_controller
   root_nh_ = root_nh; // /robot_name/
 
-  assert(robot_hw);
 
   if(!nh_.getParam("period",period_)) // Get the initial controller period
   {
@@ -89,11 +94,13 @@ bool Controller::init(hardware_interface::RobotHW* robot_hw,
   std::string urdf, srdf;
   if(!root_nh_.getParam("robot_description",urdf)) // Get the robot description from the global namespace "/"
   {
-      throw std::runtime_error(std::string("No robot_description given in namespace " + root_nh_.getNamespace()));
+    ROS_ERROR_STREAM_NAMED(CLASS_NAME,"No robot_description given in namespace " + root_nh_.getNamespace());
+    return false;
   }
   if(!root_nh_.getParam("robot_description_semantic",srdf)) // Get the robot semantic description from the global namespace "/"
   {
-      throw std::runtime_error(std::string("No robot_description_semantic given in namespace " + root_nh_.getNamespace()));
+    ROS_ERROR_STREAM_NAMED(CLASS_NAME,"No robot_description_semantic given in namespace " + root_nh_.getNamespace());
+    return false;
   }
 
   // Create the controller core

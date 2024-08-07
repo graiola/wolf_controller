@@ -241,11 +241,11 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
   Kp_leg = Kd_leg = Eigen::Vector3d::Ones();
   for(unsigned int i=0; i<wolf_controller::_joints_prefix.size(); i++)
   {
-    if (!controller_nh.getParam("gains/Kp_leg/" + wolf_controller::_joints_prefix[i] , Kp_leg(i)))
+    if (!controller_nh.getParam("gains/Kp_leg/" + wolf_controller_utils::_joints_prefix[i] , Kp_leg(i)))
     {
       ROS_DEBUG_NAMED(CLASS_NAME,"No default Kp_leg_%s gain given in the namespace: %s using 1.0 gain.",wolf_controller::_joints_prefix[i].c_str(),controller_nh.getNamespace().c_str());
     }
-    if (!controller_nh.getParam("gains/Kd_leg/" + wolf_controller::_joints_prefix[i] , Kd_leg(i)))
+    if (!controller_nh.getParam("gains/Kd_leg/" + wolf_controller_utils::_joints_prefix[i] , Kd_leg(i)))
     {
       ROS_DEBUG_NAMED(CLASS_NAME,"No default Kd_leg_%s gain given in the namespace: %s using 1.0 gain. ",wolf_controller::_joints_prefix[i].c_str(),controller_nh.getNamespace().c_str());
     }
