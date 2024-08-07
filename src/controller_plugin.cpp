@@ -31,12 +31,6 @@ using namespace wolf_controller_utils;
 
 namespace wolf_controller {
 
-std::vector<std::string> _cartesian_names = {"x","y","z","roll","pitch","yaw"}; // This is our standard cartesian dofs order
-std::vector<std::string> _xyz = {"x","y","z"};
-std::vector<std::string> _rpy = {"roll","pitch","yaw"};
-std::vector<std::string> _joints_prefix = {"haa","hfe","kfe"};
-std::vector<std::string> _legs_prefix = {"lf","lh","rf","rh"};
-
 Controller::Controller()
   :MultiInterfaceController<hardware_interface::EffortJointInterface,
    hardware_interface::ImuSensorInterface,
