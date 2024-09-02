@@ -20,15 +20,11 @@ endif()
 
 # ROS
 find_package(catkin REQUIRED tf tf_conversions controller_interface control_toolbox wolf_hardware_interface
-    realtime_tools ddynamic_reconfigure rviz_visual_tools rt_logger wolf_controller_core)
+    realtime_tools ddynamic_reconfigure rviz_visual_tools rt_logger wolf_controller_core wolf_wbid)
 # RT gui
 find_package(rt_gui QUIET)
 # OCS2
 find_package(ocs2_msgs QUIET)
-# ADVR Packages
-find_package(OpenSoT REQUIRED)
-find_package(XBotInterface REQUIRED)
-find_package(ModelInterfaceRBDL REQUIRED)
 
 if(${rt_gui_FOUND})
     message(STATUS "Found rt_gui, creating interface for wolf_controller.")
@@ -47,7 +43,7 @@ endif()
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS wolf_controller_core
+  CATKIN_DEPENDS wolf_controller_core wolf_wbid
 )
 
 include_directories(
@@ -55,9 +51,6 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${rt_gui_INCLUDE_DIRS}
     ${ocs2_msgs_INCLUDE_DIRS}
-    ${OpenSoT_INCLUDE_DIRS}
-    ${XBotInterface_INCLUDE_DIRS}
-    ${ModelInterfaceRBDL_INCLUDE_DIRS}
 )
 
 add_library(wolf_controller_ros src/controller_wrapper.cpp src/controller_plugin.cpp)
