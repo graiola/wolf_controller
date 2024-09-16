@@ -26,7 +26,12 @@
 using namespace rt_gui;
 #endif
 
+// RT LOGGER
+#ifdef RT_LOGGER
+#include <rt_logger/rt_logger.h>
 using namespace rt_logger;
+#endif
+
 using namespace wolf_controller_utils;
 
 namespace wolf_controller {
@@ -317,7 +322,9 @@ void Controller::update(const ros::Time& time, const ros::Duration& period)
 
   // Publish
   ros_wrapper_->publish(time,period);
+#ifdef RT_LOGGER
   RtLogger::getLogger().publish(time);
+#endif
 }
 
 void Controller::odomPublisher()
