@@ -19,77 +19,132 @@ else()
 endif()
 
 # ROS
-find_package(catkin REQUIRED tf tf_conversions controller_interface control_toolbox wolf_hardware_interface
-    realtime_tools ddynamic_reconfigure rviz_visual_tools rt_logger wolf_controller_core wolf_wbid)
+find_package(catkin QUIET)
+find_package(ament_cmake QUIET)
+
+if(${catkin_FOUND})
+    set(ROS_VERSION "ros")
+    catkin_package(INCLUDE_DIRS include LIBRARIES ${PROJECT_NAME})
+    add_definitions(-DROS)
+    message(STATUS "Add ROS definition")
+elseif(${ament_cmake_FOUND})
+    set(ROS_VERSION "ros2")
+    ament_export_include_directories(include)
+    ament_export_libraries(${PROJECT_NAME})
+    ament_package()
+    add_definitions(-DROS2)
+    message(STATUS "Add ROS2 definition")
+endif()
+
+# ROS pkgs
+find_package(tf2 REQUIRED)
+find_package(controller_interface REQUIRED)
+find_package(control_toolbox REQUIRED)
+find_package(wolf_hardware_interface REQUIRED)
+find_package(realtime_tools REQUIRED)
+find_package(rviz_visual_tools REQUIRED)
+find_package(wolf_controller_core REQUIRED)
+find_package(wolf_wbid REQUIRED)
+
+# RT logger
+find_package(rt_logger QUIET)
 # RT gui
 find_package(rt_gui QUIET)
 # OCS2
 find_package(ocs2_msgs QUIET)
+# DDYNAMIC RECONFIGURE
+find_package(ddynamic_reconfigure QUIET)
 
 if(${rt_gui_FOUND})
-    message(STATUS "Found rt_gui, creating interface for wolf_controller.")
+    message(STATUS "Found rt_gui, creating interface for wolf_controller_ros.")
     add_definitions(-DRT_GUI)
 else()
     message(STATUS "rt_gui not found.")
 endif()
 
+if(${rt_logger_FOUND})
+    message(STATUS "Found rt_logger, creating logger for wolf_controller_ros.")
+    add_definitions(-DRT_LOGGER)
+else()
+    message(STATUS "rt_logger not found.")
+endif()
+
 if(${ocs2_msgs_FOUND})
-    message(STATUS "Found ocs2_msgs, creating OCS2 interface for wolf_controller.")
+    message(STATUS "Found ocs2_msgs, creating OCS2 interface for wolf_controller_ros.")
     add_definitions(-DOCS2)
 else()
     message(STATUS "ocs2_msgs not found.")
 endif()
 
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS wolf_controller_core wolf_wbid
-)
+if (${ddynamic_reconfigure_FOUND})
+    message(STATUS "Found ddynamic_reconfigure, creating ddynamic reconfigure interface for wolf_controller_ros.")
+    add_definitions(-DDDYNAMIC_RECONFIGURE_ON)
+endif()
 
 include_directories(
-    include
-    ${catkin_INCLUDE_DIRS}
+    include/${ROS_VERSION}
+    ${tf2_INCLUDE_DIRS}
+    ${controller_interface_INCLUDE_DIRS}
+    ${control_toolbox_INCLUDE_DIRS}
+    ${wolf_hardware_interface_INCLUDE_DIRS}
+    ${realtime_tools_INCLUDE_DIRS}
+    ${rviz_visual_tools_INCLUDE_DIRS}
+    ${wolf_controller_core_INCLUDE_DIRS}
+    ${wolf_wbid_INCLUDE_DIRS}
     ${rt_gui_INCLUDE_DIRS}
+    ${rt_logger_INCLUDE_DIRS}
+    ${ddynamic_reconfigure_INCLUDE_DIRS}
     ${ocs2_msgs_INCLUDE_DIRS}
 )
 
-add_library(wolf_controller_ros src/controller_wrapper.cpp src/controller_plugin.cpp)
-target_link_libraries(wolf_controller_ros ${catkin_LIBRARIES} ${rt_gui_LIBRARIES})
+add_library(wolf_controller_ros src/${ROS_VERSION}/controller_wrapper.cpp src/${ROS_VERSION}/controller_plugin.cpp)
+target_link_libraries(wolf_controller_ros
+    ${tf2_LIBRARIES}
+    ${controller_interface_LIBRARIES}
+    ${control_toolbox_LIBRARIES}
+    ${wolf_hardware_interface_LIBRARIES}
+    ${realtime_tools_LIBRARIES}
+    ${rviz_visual_tools_LIBRARIES}
+    ${wolf_controller_core_LIBRARIES}
+    ${wolf_wbid_LIBRARIES}
+    ${rt_gui_LIBRARIES}
+    ${rt_logger_LIBRARIES}
+    ${ddynamic_reconfigure_LIBRARIES}
+    ${ocs2_msgs_LIBRARIES}
+    ${rt_gui_LIBRARIES})
 
-add_executable(plot_node src/plot_node.cpp)
-target_link_libraries(plot_node ${catkin_LIBRARIES})
+add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
+target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES})
 
-install(DIRECTORY include/${PROJECT_NAME}/
-        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+install(
+  DIRECTORY include/${ROS_VERSION}/${PROJECT_NAME}
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)
 
 install(TARGETS wolf_controller_ros plot_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )
 
 install(FILES controller_plugin.xml
-DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})  
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME})
 
 install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  PATTERN ".svn" EXCLUDE)
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/launch)
 
 install(DIRECTORY params/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/params
-  PATTERN ".svn" EXCLUDE)
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/params)
 
 install(DIRECTORY resources/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/resources
-  PATTERN ".svn" EXCLUDE)
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/resources)
 
 install(DIRECTORY rviz/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz
-  PATTERN ".svn" EXCLUDE)
-  
-install(DIRECTORY plotjuggler/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/plotjuggler
-  PATTERN ".svn" EXCLUDE)
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/rviz)
 
-catkin_install_python(PROGRAMS scripts/keyboard_node
-   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+install(DIRECTORY plotjuggler/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/plotjuggler)
+
+install(PROGRAMS scripts/keyboard_node
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME})
+
