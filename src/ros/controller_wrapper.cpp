@@ -9,12 +9,6 @@
 #include <wolf_controller_ros/controller_wrapper.h>
 #include <wolf_controller_core/state_machine.h>
 
-// RT GUI
-#ifdef RT_GUI
-#include <rt_gui/rt_gui_client.h>
-using namespace rt_gui;
-#endif
-
 // System
 #include <functional>
 
@@ -338,6 +332,7 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
   #endif
 
   // DDynamic reconfigure
+  #ifdef DDYNAMIC_RECONFIGURE
   ddr_server_.reset(new ddynamic_reconfigure::DDynamicReconfigure(controller_nh));
   ddr_server_->registerVariable<bool>("stand_up",false,boost::bind(&wolf_controller::ControllerCore::standUp,controller_,_1),"stand up");
   ddr_server_->registerVariable<bool>("activate_push_recovery",controller_->getFootholdsPlanner()->isPushRecoveryActive(),boost::bind(&wolf_controller::FootholdsPlanner::startPushRecovery,controller_->getFootholdsPlanner(),_1),"activate push recovery");
@@ -372,6 +367,7 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
   ddr_server_->registerVariable<double>("set_cutoff_freq_gyroscope",default_cutoff_freq_gyroscope,boost::bind(&wolf_controller::ControllerCore::setCutoffFreqGyroscope,controller_,_1),"set cutoff frequency for the imu gyroscope",0,1000.0);
   ddr_server_->registerVariable<double>("set_cutoff_freq_accelerometer",default_cutoff_freq_accelerometer,boost::bind(&wolf_controller::ControllerCore::setCutoffFreqAccelerometer,controller_,_1),"set cutoff frequency for the imu accelerometer",0,1000.0);
   ddr_server_->publishServicesTopics();
+  #endif
 
   // ROS services
   switch_control_mode_         = controller_nh.advertiseService("switch_control_mode",         &ControllerRosWrapper::switchControlModeCB,         this);
@@ -390,15 +386,6 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
   decrease_swing_frequency_    = controller_nh.advertiseService("decrease_swing_frequency",    &ControllerRosWrapper::decreaseSwingFrequencyCB,    this);
   set_swing_frequency_         = controller_nh.advertiseService("set_swing_frequency",         &ControllerRosWrapper::setSwingFrequencyCB,         this);
   set_duty_factor_             = controller_nh.advertiseService("set_duty_factor",             &ControllerRosWrapper::setDutyFactorCB,             this);
-
-  // RT GUI
-#ifdef RT_GUI
-  // create interface
-  RtGuiClient::getIstance().init("/wolf_panel","/wolf_controller");
-  RtGuiClient::getIstance().addTrigger(std::string(wolf_controller::_rt_gui_group),std::string("Stand up"),boost::bind(&wolf_controller::ControllerCore::standUp,controller_,true));
-  RtGuiClient::getIstance().addTrigger(std::string(wolf_controller::_rt_gui_group),std::string("Stand down"),boost::bind(&wolf_controller::ControllerCore::standUp,controller_,false));
-  RtGuiClient::getIstance().addTrigger(std::string(wolf_controller::_rt_gui_group),std::string("Emergency stop"),boost::bind(&wolf_controller::ControllerCore::emergencyStop,controller_));
-#endif
 }
 
 bool ControllerRosWrapper::increaseSwingFrequencyCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)

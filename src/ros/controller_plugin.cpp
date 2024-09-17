@@ -20,12 +20,6 @@
 #include <tf2/transform_datatypes.h>
 #include <tf2_eigen/tf2_eigen.h>
 
-// RT GUI
-#ifdef RT_GUI
-#include <rt_gui/rt_gui_client.h>
-using namespace rt_gui;
-#endif
-
 // RT LOGGER
 #ifdef RT_LOGGER
 #include <rt_logger/rt_logger.h>
@@ -82,11 +76,6 @@ bool Controller::init(hardware_interface::RobotHW* robot_hw,
     ROS_ERROR_STREAM_NAMED(CLASS_NAME,"No robot name given in namespace "+root_nh_.getNamespace());
     return false;
   }
-
-  if(robot_name_.empty())
-    rt_gui_group_ = "controller";
-  else
-    rt_gui_group_ = "controller/"+robot_name_;
 
   if(!root_nh_.getParam("tf_prefix",tf_prefix_)) // Get the tf prefix
   {
@@ -223,7 +212,7 @@ bool Controller::init(hardware_interface::RobotHW* robot_hw,
 
   ros_wrapper_ = std::make_shared<ControllerRosWrapper>(root_nh,controller_nh,controller_.get());
 
-  // NOTE: This has to be done after ros_wrapper creation because we loading the params with it
+  // NOTE: This has to be done after ros_wrapper creation because we are loading the params with it
   controller_->getIDProblem()->init(robot_name_,period_);
 
   // Spawn the odom publisher thread

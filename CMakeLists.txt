@@ -24,13 +24,13 @@ find_package(ament_cmake QUIET)
 
 if(${catkin_FOUND})
     set(ROS_VERSION "ros")
-    catkin_package(INCLUDE_DIRS include LIBRARIES ${PROJECT_NAME})
+    catkin_package(INCLUDE_DIRS include LIBRARIES wolf_controller_ros)
     add_definitions(-DROS)
     message(STATUS "Add ROS definition")
 elseif(${ament_cmake_FOUND})
     set(ROS_VERSION "ros2")
     ament_export_include_directories(include)
-    ament_export_libraries(${PROJECT_NAME})
+    ament_export_libraries(wolf_controller_ros)
     ament_package()
     add_definitions(-DROS2)
     message(STATUS "Add ROS2 definition")
@@ -48,19 +48,10 @@ find_package(wolf_wbid REQUIRED)
 
 # RT logger
 find_package(rt_logger QUIET)
-# RT gui
-find_package(rt_gui QUIET)
 # OCS2
 find_package(ocs2_msgs QUIET)
 # DDYNAMIC RECONFIGURE
 find_package(ddynamic_reconfigure QUIET)
-
-if(${rt_gui_FOUND})
-    message(STATUS "Found rt_gui, creating interface for wolf_controller_ros.")
-    add_definitions(-DRT_GUI)
-else()
-    message(STATUS "rt_gui not found.")
-endif()
 
 if(${rt_logger_FOUND})
     message(STATUS "Found rt_logger, creating logger for wolf_controller_ros.")
@@ -78,7 +69,9 @@ endif()
 
 if (${ddynamic_reconfigure_FOUND})
     message(STATUS "Found ddynamic_reconfigure, creating ddynamic reconfigure interface for wolf_controller_ros.")
-    add_definitions(-DDDYNAMIC_RECONFIGURE_ON)
+    add_definitions(-DDDYNAMIC_RECONFIGURE)
+else()
+    message(STATUS "ddynamic_reconfigure not found.")
 endif()
 
 include_directories(
@@ -91,7 +84,6 @@ include_directories(
     ${rviz_visual_tools_INCLUDE_DIRS}
     ${wolf_controller_core_INCLUDE_DIRS}
     ${wolf_wbid_INCLUDE_DIRS}
-    ${rt_gui_INCLUDE_DIRS}
     ${rt_logger_INCLUDE_DIRS}
     ${ddynamic_reconfigure_INCLUDE_DIRS}
     ${ocs2_msgs_INCLUDE_DIRS}
@@ -107,11 +99,9 @@ target_link_libraries(wolf_controller_ros
     ${rviz_visual_tools_LIBRARIES}
     ${wolf_controller_core_LIBRARIES}
     ${wolf_wbid_LIBRARIES}
-    ${rt_gui_LIBRARIES}
     ${rt_logger_LIBRARIES}
     ${ddynamic_reconfigure_LIBRARIES}
-    ${ocs2_msgs_LIBRARIES}
-    ${rt_gui_LIBRARIES})
+    ${ocs2_msgs_LIBRARIES})
 
 add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
 target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES})

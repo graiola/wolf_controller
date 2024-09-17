@@ -40,6 +40,11 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <ocs2_msgs/mpc_observation.h>
 #endif
 
+// DDYNAMIC RECONFIGURE
+#ifdef DDYNAMIC_RECONFIGURE
+#include <ddynamic_reconfigure/ddynamic_reconfigure.h>
+#endif
+
 class ControllerRosWrapper
 {
 
@@ -134,7 +139,9 @@ protected:
     Eigen::Vector3d base_rpy_prev_;
 
     /** @brief DDynamic reconfigure */
+    #ifdef DDYNAMIC_RECONFIGURE
     std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddr_server_;
+    #endif
 
 };
 

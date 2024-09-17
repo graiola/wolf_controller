@@ -104,8 +104,6 @@ public:
 private:
   /** @brief Robot name */
   std::string robot_name_;
-  /** @brief Group name for RT-Gui */
-  std::string rt_gui_group_;
   /** @brief Joint states for reading positions, velocities and efforts and writing effort commands */
   std::vector<hardware_interface::JointHandle> joint_states_;
   /** @brief TF prefix */
