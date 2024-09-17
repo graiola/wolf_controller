@@ -12,7 +12,6 @@
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
   <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
 
-  <depend>roscpp</depend>
   <depend>tf2</depend>
   <depend>controller_interface</depend>
   <depend>wolf_hardware_interface</depend>

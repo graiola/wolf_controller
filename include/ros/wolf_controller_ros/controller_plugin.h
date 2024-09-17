@@ -18,7 +18,6 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <pluginlib/class_list_macros.hpp>
 // ROS control
 #include <controller_interface/controller.h>
-#include <control_toolbox/pid.h>
 #include <controller_interface/multi_interface_controller.h>
 #include <hardware_interface/imu_sensor_interface.h>
 #include <hardware_interface/joint_command_interface.h>
