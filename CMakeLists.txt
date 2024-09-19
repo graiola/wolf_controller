@@ -47,6 +47,7 @@ find_package(wolf_controller_core REQUIRED)
 find_package(wolf_wbid REQUIRED)
 find_package(wolf_msgs REQUIRED)
 find_package(wolf_estimation REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 # RT logger
 find_package(rt_logger QUIET)
@@ -87,6 +88,7 @@ include_directories(
     ${wolf_estimation_INCLUDE_DIRS}
     ${wolf_msgs_INCLUDE_DIRS}
     ${realtime_tools_INCLUDE_DIRS}
+    ${geometry_msgs_INCLUDE_DIRS}
     ${rviz_visual_tools_INCLUDE_DIRS}
     ${rt_logger_INCLUDE_DIRS}
     ${ddynamic_reconfigure_INCLUDE_DIRS}
@@ -108,18 +110,17 @@ target_link_libraries(wolf_controller_ros
     ${ddynamic_reconfigure_LIBRARIES}
     ${ocs2_msgs_LIBRARIES})
 
-#add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
-#target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES})
+add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
+target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES} ${wolf_msgs_LIBRARIES} ${geometry_msgs_LIBRARIES})
 
 install(
   DIRECTORY include/${ROS_VERSION}/${PROJECT_NAME}
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
-install(TARGETS wolf_controller_ros #plot_node
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+install(TARGETS wolf_controller_ros plot_node
+    DESTINATION lib/${PROJECT_NAME}
+    LIBRARY DESTINATION lib
 )
 
 install(FILES controller_plugin.xml

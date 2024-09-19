@@ -22,6 +22,7 @@
   <depend>wolf_wbid</depend>
   <depend>wolf_msgs</depend>
   <depend>wolf_estimation</depend>
+  <depend>geometry_msgs</depend>
 
   <depend condition="$ddynamic_reconfigure_FOUND == True">ddynamic_reconfigure</depend>
   <depend condition="$rt_logger_FOUND == True">rt_logger</depend>
