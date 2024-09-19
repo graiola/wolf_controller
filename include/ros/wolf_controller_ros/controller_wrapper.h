@@ -12,10 +12,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 
 // ROS
 #include <ros/ros.h>
-#include <interactive_markers/interactive_marker_server.h>
 #include <realtime_tools/realtime_publisher.h>
-#include <realtime_tools/realtime_buffer.h>
-#include <ddynamic_reconfigure/ddynamic_reconfigure.h>
 #include <std_srvs/Trigger.h>
 
 // Eigen

@@ -11,12 +11,9 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #define CONTROLLER_WRAPPER_H
 
 // ROS
-#include <ros/ros.h>
-#include <interactive_markers/interactive_marker_server.h>
+#include <rclcpp/rclcpp.hpp>
 #include <realtime_tools/realtime_publisher.h>
-#include <realtime_tools/realtime_buffer.h>
-#include <ddynamic_reconfigure/ddynamic_reconfigure.h>
-#include <std_srvs/Trigger.h>
+#include <std_srvs/srv/trigger.hpp>
 
 // Eigen
 #include <Eigen/Core>
@@ -24,20 +21,25 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <wolf_controller_core/common.h>
 
 // Generated
-#include <wolf_msgs/ContactForces.h>
-#include <wolf_msgs/FootHolds.h>
-#include <wolf_msgs/TerrainEstimation.h>
-#include <wolf_msgs/FrictionCones.h>
-#include <wolf_msgs/CapturePoint.h>
-#include <wolf_msgs/ControllerState.h>
-#include <wolf_msgs/Float32.h>
+#include <wolf_msgs/msg/contact_forces.hpp>
+#include <wolf_msgs/msg/foot_holds.hpp>
+#include <wolf_msgs/msg/terrain_estimation.hpp>
+#include <wolf_msgs/msg/friction_cones.hpp>
+#include <wolf_msgs/msg/capture_point.hpp>
+#include <wolf_msgs/msg/controller_state.hpp>
+#include <wolf_msgs/srv/float32.hpp>
 
 // WoLF
 #include <wolf_controller_core/controller_core.h>
 
 // OCS2
 #ifdef OCS2
-#include <ocs2_msgs/mpc_observation.h>
+#include <ocs2_msgs/msg/mpc_observation.hpp>
+#endif
+
+// DDYNAMIC RECONFIGURE
+#ifdef DDYNAMIC_RECONFIGURE
+#include <ddynamic_reconfigure/ddynamic_reconfigure.hpp>
 #endif
 
 class ControllerRosWrapper
@@ -47,81 +49,86 @@ public:
 
     const std::string CLASS_NAME = "ControllerRosWrapper";
 
-    typedef std::shared_ptr<ControllerRosWrapper> Ptr;
+    using Ptr = std::shared_ptr<ControllerRosWrapper>;
 
-    ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh, wolf_controller::ControllerCore* const controller_ptr);
+    ControllerRosWrapper(rclcpp::Node::SharedPtr controller_node, wolf_controller::ControllerCore* const controller_ptr);
 
-    bool increaseSwingFrequencyCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    using TriggerRequest = std_srvs::srv::Trigger::Request;
+    using TriggerResponse = std_srvs::srv::Trigger::Response;
+    using Float32Request = wolf_msgs::srv::Float32::Request;
+    using Float32Response = wolf_msgs::srv::Float32::Response;
 
-    bool decreaseSwingFrequencyCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool increaseSwingFrequencyCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool setSwingFrequencyCB(wolf_msgs::Float32Request& req, wolf_msgs::Float32Response& res);
+    bool decreaseSwingFrequencyCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool setDutyFactorCB(wolf_msgs::Float32Request& req, wolf_msgs::Float32Response& res);
+    bool setSwingFrequencyCB(const Float32Request::SharedPtr req, Float32Response::SharedPtr res);
 
-    bool activatePushRecoveryCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool setDutyFactorCB(const Float32Request::SharedPtr req, Float32Response::SharedPtr res);
 
-    bool activateStepReflexCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool activatePushRecoveryCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool setStepHeightCB(wolf_msgs::Float32Request& req, wolf_msgs::Float32Response& res);
+    bool activateStepReflexCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool increaseStepHeightCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool setStepHeightCB(const Float32Request::SharedPtr req, Float32Response::SharedPtr res);
 
-    bool decreaseStepHeightCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool increaseStepHeightCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool switchControlModeCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool decreaseStepHeightCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool switchGaitCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool switchControlModeCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool switchPostureCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool switchGaitCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool emergencyStopCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool switchPostureCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool resetBaseCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool emergencyStopCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool standUpCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool resetBaseCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    bool standDownCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+    bool standUpCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
-    void publish(const ros::Time& time, const ros::Duration& period);
+    bool standDownCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
+
+    void publish(const rclcpp::Time& time, const rclcpp::Duration& period);
 
 protected:
 
     /** @brief Real time publisher - controller state */
-    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::ControllerState>> controller_state_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::ControllerState>> controller_state_pub_;
     /** @brief Real time publisher - contact forces */
-    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::ContactForces>> contact_forces_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::ContactForces>> contact_forces_pub_;
     /** @brief Real time publisher - foot holds */
-    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::FootHolds>> foot_holds_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::FootHolds>> foot_holds_pub_;
     /** @brief Real time publisher - terrain estimation */
-    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::TerrainEstimation>> terrain_estimation_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::TerrainEstimation>> terrain_estimation_pub_;
     /** @brief Real time publisher - friction cones */
-    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::FrictionCones>> friction_cones_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::FrictionCones>> friction_cones_pub_;
     /** @brief Real time publisher - capture point */
-    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::CapturePoint>> capture_point_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::CapturePoint>> capture_point_pub_;
     /** @brief Real time publisher - OCS2 */
     #ifdef OCS2
-    std::shared_ptr<realtime_tools::RealtimePublisher<ocs2_msgs::mpc_observation>> mpc_observation_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<ocs2_msgs::msg::MpcObservation>> mpc_observation_pub_;
     #endif
     /** @brief Controller pnt */
     wolf_controller::ControllerCore* controller_;
     /** @brief ROS services */
-    ros::ServiceServer switch_control_mode_;
-    ros::ServiceServer switch_gait_;
-    ros::ServiceServer switch_posture_;
-    ros::ServiceServer stand_up_srv_;
-    ros::ServiceServer stand_down_srv_;
-    ros::ServiceServer emergency_stop_srv_;
-    ros::ServiceServer reset_base_srv_;
-    ros::ServiceServer increase_step_height_;
-    ros::ServiceServer decrease_step_height_;
-    ros::ServiceServer set_step_height_;
-    ros::ServiceServer activate_push_recovery_;
-    ros::ServiceServer activate_step_reflex_;
-    ros::ServiceServer set_swing_frequency_;
-    ros::ServiceServer set_duty_factor_;
-    ros::ServiceServer increase_swing_frequency_;
-    ros::ServiceServer decrease_swing_frequency_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr switch_control_mode_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr switch_gait_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr switch_posture_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr stand_up_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr stand_down_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr emergency_stop_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr reset_base_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr increase_step_height_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr decrease_step_height_;
+    rclcpp::Service<wolf_msgs::srv::Float32>::SharedPtr set_step_height_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr activate_push_recovery_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr activate_step_reflex_;
+    rclcpp::Service<wolf_msgs::srv::Float32>::SharedPtr set_swing_frequency_;
+    rclcpp::Service<wolf_msgs::srv::Float32>::SharedPtr set_duty_factor_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr increase_swing_frequency_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr decrease_swing_frequency_;
 
     /** @brief tmp variables */
     Eigen::Vector6d tmp_vector6d_;
@@ -134,9 +141,10 @@ protected:
     Eigen::Vector3d base_rpy_prev_;
 
     /** @brief DDynamic reconfigure */
+    #ifdef DDYNAMIC_RECONFIGURE
     std::shared_ptr<ddynamic_reconfigure::DDynamicReconfigure> ddr_server_;
+    #endif
 
 };
 
-#endif // ROS_WRAPPERS_CONTROLLER_H
-
+#endif // CONTROLLER_WRAPPER_H

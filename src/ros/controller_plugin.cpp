@@ -189,7 +189,7 @@ bool Controller::init(hardware_interface::RobotHW* robot_hw,
   else
     ROS_INFO_STREAM_NAMED(CLASS_NAME,"Using contact sensors");
 
-  std::string input_device = "ps3";
+  std::string input_device = "keyboard";
   nh_.getParam("input_device",input_device);
   if(input_device == "ps3")
     devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<Ps3JoyHandler>(controller_nh,controller_.get())); // Ps3 joy

@@ -10,10 +10,10 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #ifndef DEVICES_KEYBOARD_H
 #define DEVICES_KEYBOARD_H
 
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/msg/twist.hpp>
 #include <wolf_controller_ros/devices/ros.h>
 
-class KeyboardHandler : public DeviceHandlerRosInterface<geometry_msgs::Twist>
+class KeyboardHandler : public DeviceHandlerRosInterface<geometry_msgs::msg::Twist>
 {
 
 public:
@@ -28,20 +28,19 @@ public:
      */
     typedef std::shared_ptr<const KeyboardHandler> ConstPtr;
 
-    KeyboardHandler(ros::NodeHandle& node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "keyboard")
-        :DeviceHandlerRosInterface(node,controller_ptr,topic)
+    KeyboardHandler(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "keyboard")
+        : DeviceHandlerRosInterface(node, controller_ptr, topic)
     {
-
     }
 
-    void cmdCallback(const geometry_msgs::Twist& msg)
+    void cmdCallback(const std::shared_ptr<geometry_msgs::msg::Twist> msg)
     {
-        base_velocity_x_scale_     = static_cast<double>(msg.linear.x);
-        base_velocity_y_scale_     = static_cast<double>(msg.linear.y);
-        base_velocity_z_scale_     = static_cast<double>(msg.linear.z);
-        base_velocity_roll_scale_  = static_cast<double>(msg.angular.x);
-        base_velocity_pitch_scale_ = static_cast<double>(msg.angular.y);
-        base_velocity_yaw_scale_   = static_cast<double>(msg.angular.z);
+        base_velocity_x_scale_     = static_cast<double>(msg->linear.x);
+        base_velocity_y_scale_     = static_cast<double>(msg->linear.y);
+        base_velocity_z_scale_     = static_cast<double>(msg->linear.z);
+        base_velocity_roll_scale_  = static_cast<double>(msg->angular.x);
+        base_velocity_pitch_scale_ = static_cast<double>(msg->angular.y);
+        base_velocity_yaw_scale_   = static_cast<double>(msg->angular.z);
 
         base_velocity_x_cmd_       = controller_ptr_->getBaseLinearVelocityCmdX();
         base_velocity_y_cmd_       = controller_ptr_->getBaseLinearVelocityCmdY();
@@ -55,15 +54,14 @@ public:
         else
             start_swing_ = false;
 
-        if( std::abs(base_velocity_x_scale_)    >0.0 ||
-            std::abs(base_velocity_y_scale_)    >0.0 ||
-            std::abs(base_velocity_z_scale_)    >0.0 ||
-            std::abs(base_velocity_roll_scale_) >0.0 ||
-            std::abs(base_velocity_pitch_scale_)>0.0 ||
-            std::abs(base_velocity_yaw_scale_)  >0.0 )
+        if( std::abs(base_velocity_x_scale_)    > 0.0 ||
+            std::abs(base_velocity_y_scale_)    > 0.0 ||
+            std::abs(base_velocity_z_scale_)    > 0.0 ||
+            std::abs(base_velocity_roll_scale_) > 0.0 ||
+            std::abs(base_velocity_pitch_scale_)> 0.0 ||
+            std::abs(base_velocity_yaw_scale_)  > 0.0 )
             activate();
     }
 };
-
 
 #endif

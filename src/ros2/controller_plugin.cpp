@@ -37,10 +37,7 @@ using namespace wolf_controller_utils;
 namespace wolf_controller {
 
 Controller::Controller()
-  :MultiInterfaceController<hardware_interface::EffortJointInterface,
-   hardware_interface::ImuSensorInterface,
-   hardware_interface::GroundTruthInterface,
-   hardware_interface::ContactSwitchSensorInterface> (true) // allow_optional_interfaces = true
+  :ControllerInterface()
   ,stopping_(false)
   ,publish_odom_tf_(false)
   ,publish_odom_msg_(false)
@@ -51,261 +48,303 @@ Controller::Controller()
 
 Controller::~Controller()
 {
+
 }
 
-bool Controller::init(hardware_interface::RobotHW* robot_hw,
-                      ros::NodeHandle& root_nh,
-                      ros::NodeHandle& controller_nh)
+controller_interface::return_type Controller::init(const string &controller_name)
 {
-  ROS_INFO_NAMED(CLASS_NAME,"Initialize controller plugin");
-
-  if(!robot_hw)
+  // initialize lifecycle node
+  auto ret = ControllerInterface::init(controller_name);
+  if (ret != controller_interface::return_type::OK)
   {
-    ROS_ERROR_NAMED(CLASS_NAME,"hardware_interface::RobotHW is a null pointer!");
-    return false;
+    return ret;
   }
 
-  nh_ = controller_nh; // /robot_name/wolf_controller
-  root_nh_ = root_nh; // /robot_name/
-
-
-  if(!nh_.getParam("period",period_)) // Get the initial controller period
-  {
-    ROS_ERROR_STREAM_NAMED(CLASS_NAME,"No period given in namespace "+nh_.getNamespace());
-    return false;
-  }
-
-  assert(period_ > 0.0);
-
-  if(!root_nh_.getParam("robot_name",robot_name_)) // Get the robot namespace
-  {
-    ROS_ERROR_STREAM_NAMED(CLASS_NAME,"No robot name given in namespace "+root_nh_.getNamespace());
-    return false;
-  }
-
-  if(robot_name_.empty())
-    rt_gui_group_ = "controller";
-  else
-    rt_gui_group_ = "controller/"+robot_name_;
-
-  if(!root_nh_.getParam("tf_prefix",tf_prefix_)) // Get the tf prefix
-  {
-    ROS_WARN_STREAM_NAMED(CLASS_NAME,"No tf prefix given in namespace, using an empty one "+root_nh_.getNamespace());
-  }
-
-  fixTFprefix(tf_prefix_);
-
-  // Create the quadruped robot object, it wraps the robot model with some meta information
   std::string urdf, srdf;
-  if(!root_nh_.getParam("robot_description",urdf)) // Get the robot description from the global namespace "/"
+  std::string input_device = "keyboard";
+  bool use_contact_sensors = false;
+
+  try
   {
-    ROS_ERROR_STREAM_NAMED(CLASS_NAME,"No robot_description given in namespace " + root_nh_.getNamespace());
-    return false;
+    // with the lifecycle node being initialized, we can declare parameters
+    auto_declare<double>("period", period_);
+    auto_declare<std::string>("robot_name", robot_name_);
+    auto_declare<std::string>("tf_prefix", tf_prefix_);
+    auto_declare<std::string>("robot_description", urdf);
+    auto_declare<std::string>("robot_description_semantic", srdf);
+    auto_declare<std::string>("imu_sensor_name", imu_name_);
+    auto_declare<std::string>("input_device", input_device);
+    auto_declare<bool>("use_contact_sensors", use_contact_sensors);
+    auto_declare<bool>("publish_odom_tf", publish_odom_tf_);
+    auto_declare<bool>("publish_odom_msg", publish_odom_msg_);
   }
-  if(!root_nh_.getParam("robot_description_semantic",srdf)) // Get the robot semantic description from the global namespace "/"
+  catch (const std::exception & e)
   {
-    ROS_ERROR_STREAM_NAMED(CLASS_NAME,"No robot_description_semantic given in namespace " + root_nh_.getNamespace());
-    return false;
+    fprintf(stderr, "Exception thrown during init stage with message: %s \n", e.what());
+    return controller_interface::return_type::ERROR;
   }
 
   // Create the controller core
   controller_ = std::make_shared<ControllerCore>();
   controller_->init(period_,urdf,srdf,robot_name_);
-  auto joint_names = controller_->getJointNames();
 
-  // Load hardware interfaces
-  hardware_interface::EffortJointInterface* jt_hw = robot_hw->get<hardware_interface::EffortJointInterface>();
-  hardware_interface::ImuSensorInterface* imu_hw = robot_hw->get<hardware_interface::ImuSensorInterface>();
-  hardware_interface::GroundTruthInterface* gt_hw = robot_hw->get<hardware_interface::GroundTruthInterface>();
-  hardware_interface::ContactSwitchSensorInterface* cs_hw = robot_hw->get<hardware_interface::ContactSwitchSensorInterface>();
-
-  // Hardware interfaces: Joints
-  if(!jt_hw)
-  {
-    ROS_ERROR_NAMED(CLASS_NAME,"hardware_interface::EffortJointInterface not found");
-    return false;
-  }
-  else
-  {
-    // Setting up joint handles:
-    for (unsigned int i = 0; i < joint_names.size(); i++)
-    {
-      // Getting joint state handle
-      try
-      {
-        ROS_DEBUG_STREAM_NAMED(CLASS_NAME,"Found joint: "<<joint_names[i]);
-        joint_states_.push_back(jt_hw->getHandle(joint_names[i])); // FIXME
-      }
-      catch(...)
-      {
-        ROS_ERROR_NAMED(CLASS_NAME,"Error loading the joint handles");
-        return false;
-      }
-    }
-    assert(joint_states_.size()>0);
-  }
-
-  if(!imu_hw)
-  {
-    ROS_ERROR_NAMED(CLASS_NAME,"hardware_interface::ImuSensorInterface not found");
-    return false;
-  }
-  else
-  {
-    try
-    {
-      std::string imu_sensor_name;
-      if(controller_nh.getParam("imu_sensor_name",imu_sensor_name))
-        imu_sensor_ = imu_hw->getHandle(imu_sensor_name); // Take the selected imu sensor
-      else
-        imu_sensor_ = imu_hw->getHandle(imu_hw->getNames()[0]); // Take the first imu sensor
-    }
-    catch(...)
-    {
-      ROS_ERROR_NAMED(CLASS_NAME,"Error loading the imu handler");
-      return false;
-    }
-  }
-
-  if(!gt_hw)
-    ROS_WARN_NAMED(CLASS_NAME,"hardware_interface::GroundTruthInterface not found");
-  else
-    ground_truth_ = gt_hw->getHandle(gt_hw->getNames()[0]);
-
-  use_contact_sensors_ = false;
-  controller_nh.getParam("use_contact_sensors",use_contact_sensors_);
-  if(use_contact_sensors_)
-  {
-    if(!cs_hw)
-    {
-      ROS_ERROR_NAMED(CLASS_NAME,"hardware_interface::ContactSwitchSensorInterface not found");
-      return false;
-    }
-    else
-    {
-      auto contact_sensor_names = cs_hw->getNames();
-      if(contact_sensor_names.size() != N_LEGS)
-      {
-        ROS_ERROR_NAMED(CLASS_NAME,"Wrong number of contact sensors! only (4) are supported. Did you specify the contacts in the SRDF file?");
-        return false;
-      }
-      auto foot_names = controller_->getRobotModel()->getFootNames();
-      contact_sensor_names = sortByLegPrefix(contact_sensor_names);
-      for(unsigned int i=0;i<contact_sensor_names.size();i++)
-        contact_sensors_[foot_names[i]] = cs_hw->getHandle(contact_sensor_names[i]);
-    }
-  }
-  if(!use_contact_sensors_) // Use the contact sensors
-    ROS_INFO_STREAM_NAMED(CLASS_NAME,"Using contact estimation");
-  else
-    ROS_INFO_STREAM_NAMED(CLASS_NAME,"Using contact sensors");
-
-  std::string input_device = "ps3";
-  nh_.getParam("input_device",input_device);
   if(input_device == "ps3")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<Ps3JoyHandler>(controller_nh,controller_.get())); // Ps3 joy
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<Ps3JoyHandler>(get_node(),controller_.get())); // Ps3 joy
   else if(input_device == "xbox")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<XboxJoyHandler>(controller_nh,controller_.get())); // Xbox joy
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<XboxJoyHandler>(get_node(),controller_.get())); // Xbox joy
   else if(input_device == "spacemouse")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<SpaceJoyHandler>(controller_nh,controller_.get())); // Space joy
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<SpaceJoyHandler>(get_node(),controller_.get())); // Space joy
   else if(input_device == "keyboard")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<KeyboardHandler>(controller_nh,controller_.get())); // Keyboard
-  devices_.addDevice(DevicesHandler::priority_t::HIGH,std::make_shared<TwistHandler>(controller_nh,controller_.get(),"priority_twist")); // Twist
-  devices_.addDevice(DevicesHandler::priority_t::LOW,std::make_shared<TwistHandler>(controller_nh,controller_.get(),"twist")); // Twist
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<KeyboardHandler>(get_node(),controller_.get())); // Keyboard
+  devices_.addDevice(DevicesHandler::priority_t::HIGH,std::make_shared<TwistHandler>(get_node(),controller_.get(),"priority_twist")); // Twist
+  devices_.addDevice(DevicesHandler::priority_t::LOW,std::make_shared<TwistHandler>(get_node(),controller_.get(),"twist")); // Twist
 
-  bool publish_odom_tf = false; // On/Off
-  controller_nh.getParam("publish_odom_tf", publish_odom_tf);
-  bool publish_odom_msg = false; // On/Off
-  controller_nh.getParam("publish_odom_msg", publish_odom_msg);
+  ros_wrapper_ = std::make_shared<ControllerRosWrapper>(get_node(),controller_.get());
 
-  publish_odom_tf_ = publish_odom_tf;
-  publish_odom_msg_ = publish_odom_msg;
-
-  ros_wrapper_ = std::make_shared<ControllerRosWrapper>(root_nh,controller_nh,controller_.get());
-
-  // NOTE: This has to be done after ros_wrapper creation because we loading the params with it
+  // NOTE: This has to be done after ros_wrapper creation because we are loading the params with it
   controller_->getIDProblem()->init(robot_name_,period_);
 
   // Spawn the odom publisher thread
   odom_publisher_thread_= std::make_shared<std::thread>(&Controller::odomPublisher,this);
 
-  return true;
+  return controller_interface::return_type::OK;
+}
+
+controller_interface::InterfaceConfiguration Controller::command_interface_configuration() const
+{
+  std::vector<std::string> conf_names;
+  for (const auto & joint_name : controller_->getJointNames())
+  {
+    conf_names.push_back(joint_name + "/" + hardware_interface::HW_IF_EFFORT);
+  }
+  return {controller_interface::interface_configuration_type::INDIVIDUAL, conf_names};
+}
+
+controller_interface::InterfaceConfiguration Controller::state_interface_configuration() const
+{
+  std::vector<std::string> conf_names;
+
+  // Add POSITION, VELOCITY, and EFFORT interfaces for the joints
+  for (const auto & joint_name : controller_->getJointNames())
+  {
+    conf_names.push_back(joint_name + "/" + hardware_interface::HW_IF_POSITION);
+    conf_names.push_back(joint_name + "/" + hardware_interface::HW_IF_VELOCITY);
+    conf_names.push_back(joint_name + "/" + hardware_interface::HW_IF_EFFORT);
+  }
+
+  // Add IMU interfaces
+  conf_names.push_back(imu_name_ + "/orientation.x");
+  conf_names.push_back(imu_name_ + "/orientation.y");
+  conf_names.push_back(imu_name_ + "/orientation.z");
+  conf_names.push_back(imu_name_ + "/orientation.w");
+  conf_names.push_back(imu_name_ + "/angular_velocity.x");
+  conf_names.push_back(imu_name_ + "/angular_velocity.y");
+  conf_names.push_back(imu_name_ + "/angular_velocity.z");
+  conf_names.push_back(imu_name_ + "/linear_acceleration.x");
+  conf_names.push_back(imu_name_ + "/linear_acceleration.y");
+  conf_names.push_back(imu_name_ + "/linear_acceleration.z");
+
+  return {controller_interface::interface_configuration_type::INDIVIDUAL, conf_names};
+}
+
+rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Controller::on_configure(const rclcpp_lifecycle::State &previous_state)
+{
+
+  // register handles for position, velocity, and effort state interfaces
+  joint_handles_.reserve(controller_->getJointNames().size());
+
+  for (const auto &joint_name : controller_->getJointNames())
+  {
+    // Find position interface
+    const auto position_handle = std::find_if(
+          state_interfaces_.cbegin(), state_interfaces_.cend(), [&joint_name](const auto &interface) {
+      return interface.get_name() == joint_name &&
+          interface.get_interface_name() == hardware_interface::HW_IF_POSITION;
+    });
+
+    if (position_handle == state_interfaces_.cend())
+    {
+      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint position state handle for %s", joint_name.c_str());
+      return CallbackReturn::ERROR;
+    }
+
+    // Find velocity interface
+    const auto velocity_handle = std::find_if(
+          state_interfaces_.cbegin(), state_interfaces_.cend(), [&joint_name](const auto &interface) {
+      return interface.get_name() == joint_name &&
+          interface.get_interface_name() == hardware_interface::HW_IF_VELOCITY;
+    });
+
+    if (velocity_handle == state_interfaces_.cend())
+    {
+      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint velocity state handle for %s", joint_name.c_str());
+      return CallbackReturn::ERROR;
+    }
+
+    // Find effort interface (for state)
+    const auto effort_state_handle = std::find_if(
+          state_interfaces_.cbegin(), state_interfaces_.cend(), [&joint_name](const auto &interface) {
+      return interface.get_name() == joint_name &&
+          interface.get_interface_name() == hardware_interface::HW_IF_EFFORT;
+    });
+
+    if (effort_state_handle == state_interfaces_.cend())
+    {
+      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint effort state handle for %s", joint_name.c_str());
+      return CallbackReturn::ERROR;
+    }
+
+    // Find effort interface (for command)
+    const auto effort_command_handle = std::find_if(
+          command_interfaces_.begin(), command_interfaces_.end(), [&joint_name](const auto &interface) {
+      return interface.get_name() == joint_name &&
+          interface.get_interface_name() == hardware_interface::HW_IF_EFFORT;
+    });
+
+    if (effort_command_handle == command_interfaces_.end())
+    {
+      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint effort command handle for %s", joint_name.c_str());
+      return CallbackReturn::ERROR;
+    }
+
+    // Emplace joint handles with position, velocity, and effort state, and effort command interfaces
+    joint_handles_.emplace_back(
+          JointHandle{
+            std::ref(*position_handle),  // Position
+            std::ref(*velocity_handle),  // Velocity
+            std::ref(*effort_state_handle), // Effort (State)
+            std::ref(*effort_command_handle) // Effort (Command)
+          });
+  }
+
+  // Register IMU handles
+  const std::string imu_name = imu_name_;  // Ensure imu_name_ is set
+  const auto orientation_x = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.x";
+  });
+
+  const auto orientation_y = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.y";
+  });
+
+  const auto orientation_z = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.z";
+  });
+
+  const auto orientation_w = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.w";
+  });
+
+  const auto angular_velocity_x = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "angular_velocity.x";
+  });
+
+  const auto angular_velocity_y = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "angular_velocity.y";
+  });
+
+  const auto angular_velocity_z = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "angular_velocity.z";
+  });
+
+  const auto linear_acceleration_x = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "linear_acceleration.x";
+  });
+
+  const auto linear_acceleration_y = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "linear_acceleration.y";
+  });
+
+  const auto linear_acceleration_z = std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
+    return interface.get_name() == imu_name && interface.get_interface_name() == "linear_acceleration.z";
+  });
+
+  if (orientation_x == state_interfaces_.cend() || orientation_y == state_interfaces_.cend() ||
+      orientation_z == state_interfaces_.cend() || orientation_w == state_interfaces_.cend() ||
+      angular_velocity_x == state_interfaces_.cend() || angular_velocity_y == state_interfaces_.cend() ||
+      angular_velocity_z == state_interfaces_.cend() || linear_acceleration_x == state_interfaces_.cend() ||
+      linear_acceleration_y == state_interfaces_.cend() || linear_acceleration_z == state_interfaces_.cend())
+  {
+    RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain IMU state interfaces");
+    return CallbackReturn::ERROR;
+  }
+
+  imu_handle_ = std::make_unique<IMUHandle>(
+        std::ref(*orientation_x), std::ref(*orientation_y), std::ref(*orientation_z), std::ref(*orientation_w),
+        std::ref(*angular_velocity_x), std::ref(*angular_velocity_y), std::ref(*angular_velocity_z),
+        std::ref(*linear_acceleration_x), std::ref(*linear_acceleration_y), std::ref(*linear_acceleration_z));
+
+  return CallbackReturn::SUCCESS;
 }
 
 void Controller::readJoints()
 {
-  for (unsigned int i = 0; i < joint_states_.size(); i++)
+  for (unsigned int i = 0; i < joint_handles_.size(); i++)
   {
-    controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_states_[i].getPosition());
-    controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_states_[i].getVelocity());
+    controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_handles_[i].position_state.get().get_value());
+    controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_handles_[i].velocity_state.get().get_value());
     controller_->setJointAcceleration(i+FLOATING_BASE_DOFS,0.0); // FIXME
-    controller_->setJointEffort(i+FLOATING_BASE_DOFS,joint_states_[i].getEffort());
+    controller_->setJointEffort(i+FLOATING_BASE_DOFS,joint_handles_[i].effort_state.get().get_value());
   }
 }
 
 void Controller::readImu()
 {
-  //imu_accelerometer_ = Eigen::Map<const Eigen::Vector3d>(imu_sensor_.getLinearAcceleration());
-  //imu_gyroscope_     = Eigen::Map<const Eigen::Vector3d>(imu_sensor_.getAngularVelocity());
+  tmp_quat_.w() = imu_handle_->orientation_w.get().get_value();
+  tmp_quat_.x() = imu_handle_->orientation_x.get().get_value();
+  tmp_quat_.y() = imu_handle_->orientation_y.get().get_value();
+  tmp_quat_.z() = imu_handle_->orientation_z.get().get_value();
 
-  tmp_quat_.w() = imu_sensor_.getOrientation()[0];
-  tmp_quat_.x() = imu_sensor_.getOrientation()[1];
-  tmp_quat_.y() = imu_sensor_.getOrientation()[2];
-  tmp_quat_.z() = imu_sensor_.getOrientation()[3];
+  tmp_gyro_.x() = imu_handle_->angular_velocity_x.get().get_value();
+  tmp_gyro_.y() = imu_handle_->angular_velocity_y.get().get_value();
+  tmp_gyro_.z() = imu_handle_->angular_velocity_z.get().get_value();
+
+  tmp_acc_.x() = imu_handle_->linear_acceleration_x.get().get_value();
+  tmp_acc_.y() = imu_handle_->linear_acceleration_y.get().get_value();
+  tmp_acc_.z() = imu_handle_->linear_acceleration_z.get().get_value();
 
   controller_->setImuOrientation(tmp_quat_);
-  controller_->setImuGyroscope(Eigen::Map<const Eigen::Vector3d>(imu_sensor_.getAngularVelocity()));
-  controller_->setImuAccelerometer(Eigen::Map<const Eigen::Vector3d>(imu_sensor_.getLinearAcceleration()));
+  controller_->setImuGyroscope(tmp_gyro_);
+  controller_->setImuAccelerometer(tmp_acc_);
 }
 
-void Controller::readGroundTruth()
+controller_interface::return_type Controller::update()
 {
+  /*auto logger = node_->get_logger();
+  if (get_current_state().id() == State::PRIMARY_STATE_INACTIVE)
+  {
+    if (!is_halted)
+    {
+      halt();
+      is_halted = true;
+    }
+    return controller_interface::return_type::OK;
+  }*/
 
-  tmp_quat_.w() = ground_truth_.getOrientation()[0];
-  tmp_quat_.x() = ground_truth_.getOrientation()[1];
-  tmp_quat_.y() = ground_truth_.getOrientation()[2];
-  tmp_quat_.z() = ground_truth_.getOrientation()[3];
+  const auto time = node_->get_clock()->now();
 
-  controller_->setExtEstimatedState(Eigen::Map<const Eigen::Vector3d>(ground_truth_.getLinearPosition()),
-                                    Eigen::Map<const Eigen::Vector3d>(ground_truth_.getLinearVelocity()),
-                                    Eigen::Map<const Eigen::Vector3d>(ground_truth_.getLinearAcceleration()),
-                                    tmp_quat_,
-                                    Eigen::Map<const Eigen::Vector3d>(ground_truth_.getAngularVelocity()));
-}
-
-void Controller::readContactSensors()
-{
-  for(const auto& tmp : contact_sensors_)
-      controller_->setExtEstimatedContactState(tmp.first,tmp.second.getContactState(),Eigen::Map<const Eigen::Vector3d>(tmp.second.getForce()));
-}
-
-void Controller::starting(const ros::Time&  /*time*/)
-{
-  ROS_DEBUG_NAMED(CLASS_NAME,"Starting WoLF controller");
-
-  // Read from the hardware interfaces:
-  // 1) Joints
-  readJoints();
-  // 2) IMU
-  readImu();
-
-  ROS_DEBUG_NAMED(CLASS_NAME,"Starting WoLF controller completed");
-}
-
-void Controller::update(const ros::Time& time, const ros::Duration& period)
-{
-  period_ = period.toSec();
+  const auto period = time - prev_time_;
 
   // Update input devices
   devices_.writeToOutput(period_);
 
   // Read the ground truth from the hardware interface if available
-  if(!ground_truth_.getName().empty())
-    readGroundTruth();
-
-  // Read the contact sensors from the hardware interface if selected
-  if(use_contact_sensors_)
-    readContactSensors();
+  //if(!ground_truth_.getName().empty())
+  //  readGroundTruth();
+  //
+  //// Read the contact sensors from the hardware interface if selected
+  //if(use_contact_sensors_)
+  //  readContactSensors();
 
   // Read joint values from the hardware interface
   readJoints();
@@ -317,19 +356,23 @@ void Controller::update(const ros::Time& time, const ros::Duration& period)
   controller_->update(period_);
 
   // Write to the hardware interface
-  for (unsigned int i = 0; i < joint_states_.size(); i++)
-    joint_states_[i].setCommand(controller_->getDesiredJointEfforts()(i+FLOATING_BASE_DOFS));
+  for (unsigned int i = 0; i < joint_handles_.size(); i++)
+    joint_handles_[i].effort_command.get().set_value(controller_->getDesiredJointEfforts()(i+FLOATING_BASE_DOFS));
 
   // Publish
   ros_wrapper_->publish(time,period);
 #ifdef RT_LOGGER
   RtLogger::getLogger().publish(time);
 #endif
+
+  prev_time_ = time;
+
+  return controller_interface::return_type::OK;
 }
 
 void Controller::odomPublisher()
 {
-  ROS_DEBUG_NAMED(CLASS_NAME,"Start the odomPublisher");
+  RCLCPP_DEBUG(get_node()->get_logger(), "Start the odomPublisher");
 
   // Create the following transformations:
   // odom --> base_footprint --> base --> base_stabilized
@@ -348,31 +391,31 @@ void Controller::odomPublisher()
   double estimated_z;
   Eigen::Matrix3d tmp_R;
 
-  ros::Time t_prev;
-  tf2_ros::TransformBroadcaster br;
-  nav_msgs::Odometry odom_msg;
-  geometry_msgs::TransformStamped basefoot_T_world_msg;
-  geometry_msgs::TransformStamped basefoot_T_base_msg;
-  geometry_msgs::TransformStamped odom_T_basefoot_msg;
-  geometry_msgs::TransformStamped odom_T_base_msg;
-  geometry_msgs::TransformStamped base_T_stabilized_msg;
-  ros::Publisher odom_pub;
+  rclcpp::Time t_prev;
+  auto br = std::make_shared<tf2_ros::TransformBroadcaster>(get_node());
+  nav_msgs::msg::Odometry odom_msg;
+  geometry_msgs::msg::TransformStamped basefoot_T_world_msg;
+  geometry_msgs::msg::TransformStamped basefoot_T_base_msg;
+  geometry_msgs::msg::TransformStamped odom_T_basefoot_msg;
+  geometry_msgs::msg::TransformStamped odom_T_base_msg;
+  geometry_msgs::msg::TransformStamped base_T_stabilized_msg;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
 
-  if(publish_odom_msg_)
-    odom_pub = root_nh_.advertise<nav_msgs::Odometry>("odometry/robot",100);
+  if (publish_odom_msg_)
+    odom_pub = get_node()->create_publisher<nav_msgs::msg::Odometry>("odometry/robot", 100);
 
-  ros::Rate publishing_rate(odom_pub_rate_);
+  rclcpp::Rate publishing_rate(odom_pub_rate_);
 
   auto state_estimator = controller_->getStateEstimator();
   auto robot_model = controller_->getRobotModel();
 
-  while(!stopping_)
+  while (!stopping_)
   {
-    ros::Time t = ros::Time::now();
+    rclcpp::Time t = get_node()->get_clock()->now();
 
-    double dt = t.toSec() - t_prev.toSec();
+    double dt = t.seconds() - t_prev.seconds();
 
-    if(dt > 0.0) // Avoid publishing duplicated transforms
+    if (dt > 0.0) // Avoid publishing duplicated transforms
     {
       // Get base wrt the ground truth
       world_T_base.translation() = state_estimator->getGroundTruthBasePosition();
@@ -382,103 +425,90 @@ void Controller::odomPublisher()
       estimated_z = state_estimator->getEstimatedBaseHeight();
 
       // Create the tf transform between base_footprint -> world
-      tmp_v =  world_T_base.translation();
+      tmp_v = world_T_base.translation();
       tmp_v(2) = tmp_v(2) - estimated_z;
-      rpyToRotTranspose(0.0,0.0,robot_model->getBaseYawInWorld(),tmp_R);
-      tmp_v = - tmp_R * tmp_v;
+      rpyToRotTranspose(0.0, 0.0, robot_model->getBaseYawInWorld(), tmp_R);
+      tmp_v = -tmp_R * tmp_v;
       basefoot_T_world.translation() = tmp_v;
       basefoot_T_world.linear() = tmp_R;
+
       // Set coordinates
       basefoot_T_world_msg = tf2::eigenToTransform(basefoot_T_world);
       // Set transform header
-      basefoot_T_world_msg.header.frame_id = tf_prefix_+BASE_FOOTPRINT_FRAME;
-      basefoot_T_world_msg.child_frame_id  = tf_prefix_+WORLD_FRAME_NAME;
-      basefoot_T_world_msg.header.seq++;
+      basefoot_T_world_msg.header.frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
+      basefoot_T_world_msg.child_frame_id = tf_prefix_ + WORLD_FRAME_NAME;
       basefoot_T_world_msg.header.stamp = t;
-      br.sendTransform(basefoot_T_world_msg);
+      br->sendTransform(basefoot_T_world_msg);
 
       // Create the tf transform between base_footprint -> base
       basefoot_T_base.linear() = robot_model->getBaseRotationInHf();
       basefoot_T_base.translation().x() = 0.0;
       basefoot_T_base.translation().y() = 0.0;
       basefoot_T_base.translation().z() = estimated_z;
+
       // Set coordinates
       basefoot_T_base_msg = tf2::eigenToTransform(basefoot_T_base);
       // Set transform header
-      basefoot_T_base_msg.header.frame_id = tf_prefix_+BASE_FOOTPRINT_FRAME;
-      basefoot_T_base_msg.child_frame_id  = tf_prefix_+robot_model->getBaseLinkName();
-      basefoot_T_base_msg.header.seq++;
+      basefoot_T_base_msg.header.frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
+      basefoot_T_base_msg.child_frame_id = tf_prefix_ + robot_model->getBaseLinkName();
       basefoot_T_base_msg.header.stamp = t;
-      br.sendTransform(basefoot_T_base_msg);
+      br->sendTransform(basefoot_T_base_msg);
 
       // Create the tf transform between base -> base_stabilized
       base_T_stabilized.linear() = robot_model->getBaseRotationInHf().transpose();
       base_T_stabilized.translation().x() = 0.0;
       base_T_stabilized.translation().y() = 0.0;
       base_T_stabilized.translation().z() = 0.0;
+
       // Set coordinates
       base_T_stabilized_msg = tf2::eigenToTransform(base_T_stabilized);
       // Set transform header
-      base_T_stabilized_msg.header.frame_id = tf_prefix_+robot_model->getBaseLinkName();
-      base_T_stabilized_msg.child_frame_id  = tf_prefix_+BASE_STABILIZED_FRAME;
-      base_T_stabilized_msg.header.seq++;
+      base_T_stabilized_msg.header.frame_id = tf_prefix_ + robot_model->getBaseLinkName();
+      base_T_stabilized_msg.child_frame_id = tf_prefix_ + BASE_STABILIZED_FRAME;
       base_T_stabilized_msg.header.stamp = t;
-      br.sendTransform(base_T_stabilized_msg);
+      br->sendTransform(base_T_stabilized_msg);
 
-      if(publish_odom_msg_ || publish_odom_tf_)
+      if (publish_odom_msg_ || publish_odom_tf_)
       {
-
         odom_T_base = state_estimator->getFloatingBasePose();
-
         odom_T_basefoot = odom_T_base * basefoot_T_base.inverse();
 
         // Set coordinates
         odom_T_basefoot_msg = tf2::eigenToTransform(odom_T_basefoot);
         // Set transform header
-        odom_T_basefoot_msg.header.frame_id = tf_prefix_+ODOM_FRAME;
-        odom_T_basefoot_msg.child_frame_id  = tf_prefix_+BASE_FOOTPRINT_FRAME;
-        odom_T_basefoot_msg.header.seq++;
+        odom_T_basefoot_msg.header.frame_id = tf_prefix_ + ODOM_FRAME;
+        odom_T_basefoot_msg.child_frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
         odom_T_basefoot_msg.header.stamp = t;
-        if(publish_odom_tf_)
-          br.sendTransform(odom_T_basefoot_msg);
+
+        if (publish_odom_tf_)
+          br->sendTransform(odom_T_basefoot_msg);
 
         // Create the odom message
-        odom_msg.header.seq                 ++;
-        odom_msg.header.stamp               = t;
-        odom_msg.header.frame_id            = odom_T_basefoot_msg.header.frame_id;
-        odom_msg.child_frame_id             = odom_T_basefoot_msg.child_frame_id;
-        odom_msg.pose.pose.position.x       = odom_T_basefoot_msg.transform.translation.x;
-        odom_msg.pose.pose.position.y       = odom_T_basefoot_msg.transform.translation.y;
-        odom_msg.pose.pose.position.z       = odom_T_basefoot_msg.transform.translation.z;
-        odom_msg.pose.pose.orientation      = odom_T_basefoot_msg.transform.rotation;
-        odom_msg.twist.twist                = tf2::toMsg(state_estimator->getFloatingBaseTwist());
+        odom_msg.header.stamp = t;
+        odom_msg.header.frame_id = odom_T_basefoot_msg.header.frame_id;
+        odom_msg.child_frame_id = odom_T_basefoot_msg.child_frame_id;
+        odom_msg.pose.pose.position.x = odom_T_basefoot_msg.transform.translation.x;
+        odom_msg.pose.pose.position.y = odom_T_basefoot_msg.transform.translation.y;
+        odom_msg.pose.pose.position.z = odom_T_basefoot_msg.transform.translation.z;
+        odom_msg.pose.pose.orientation = odom_T_basefoot_msg.transform.rotation;
+        odom_msg.twist.twist = tf2::toMsg(state_estimator->getFloatingBaseTwist());
+
         // FIXME This is causing issues:
-        //wolf_estimation::eigenToCovariance(odom_estimator.getPoseCovariance(),odom_msg.pose.covariance);
-        //wolf_estimation::eigenToCovariance(odom_estimator.getTwistCovariance(),odom_msg.twist.covariance);
-        if(publish_odom_msg_)
-          odom_pub.publish(odom_msg);
+        // wolf_estimation::eigenToCovariance(odom_estimator.getPoseCovariance(), odom_msg.pose.covariance);
+        // wolf_estimation::eigenToCovariance(odom_estimator.getTwistCovariance(), odom_msg.twist.covariance);
+
+        if (publish_odom_msg_)
+          odom_pub->publish(odom_msg);
       }
     }
-
-    //std::this_thread::sleep_for( std::chrono::milliseconds(THREADS_SLEEP_TIME_ms) );
 
     t_prev = t;
 
     publishing_rate.sleep();
   }
-  ROS_DEBUG_NAMED(CLASS_NAME,"Stop the odomPublisher");
-}
-
-void Controller::stopping(const ros::Time& /*time*/)
-{
-  ROS_DEBUG_NAMED(CLASS_NAME,"Stopping WoLF controller");
-
-  stopping_ = true;
-  odom_publisher_thread_->join();
-
-  ROS_DEBUG_NAMED(CLASS_NAME,"Stopping WoLF controller completed");
+  RCLCPP_DEBUG(get_node()->get_logger(), "Stop the odomPublisher");
 }
 
 } //namespace
 
-PLUGINLIB_EXPORT_CLASS(wolf_controller::Controller, controller_interface::ControllerBase);
+PLUGINLIB_EXPORT_CLASS(wolf_controller::Controller, controller_interface::ControllerInterface);

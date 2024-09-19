@@ -39,11 +39,14 @@ endif()
 # ROS pkgs
 find_package(tf2 REQUIRED)
 find_package(controller_interface REQUIRED)
-find_package(wolf_hardware_interface REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(rviz_visual_tools REQUIRED)
+find_package(wolf_controller_utils REQUIRED)
+find_package(wolf_hardware_interface REQUIRED)
 find_package(wolf_controller_core REQUIRED)
 find_package(wolf_wbid REQUIRED)
+find_package(wolf_msgs REQUIRED)
+find_package(wolf_estimation REQUIRED)
 
 # RT logger
 find_package(rt_logger QUIET)
@@ -77,11 +80,14 @@ include_directories(
     include/${ROS_VERSION}
     ${tf2_INCLUDE_DIRS}
     ${controller_interface_INCLUDE_DIRS}
+    ${wolf_controller_utils_INCLUDE_DIRS}
     ${wolf_hardware_interface_INCLUDE_DIRS}
-    ${realtime_tools_INCLUDE_DIRS}
-    ${rviz_visual_tools_INCLUDE_DIRS}
     ${wolf_controller_core_INCLUDE_DIRS}
     ${wolf_wbid_INCLUDE_DIRS}
+    ${wolf_estimation_INCLUDE_DIRS}
+    ${wolf_msgs_INCLUDE_DIRS}
+    ${realtime_tools_INCLUDE_DIRS}
+    ${rviz_visual_tools_INCLUDE_DIRS}
     ${rt_logger_INCLUDE_DIRS}
     ${ddynamic_reconfigure_INCLUDE_DIRS}
     ${ocs2_msgs_INCLUDE_DIRS}
@@ -91,24 +97,26 @@ add_library(wolf_controller_ros src/${ROS_VERSION}/controller_wrapper.cpp src/${
 target_link_libraries(wolf_controller_ros
     ${tf2_LIBRARIES}
     ${controller_interface_LIBRARIES}
+    ${wolf_controller_utils_LIBRARIES}
     ${wolf_hardware_interface_LIBRARIES}
-    ${realtime_tools_LIBRARIES}
-    ${rviz_visual_tools_LIBRARIES}
     ${wolf_controller_core_LIBRARIES}
     ${wolf_wbid_LIBRARIES}
+    ${wolf_estimation_LIBRARIES}
+    ${realtime_tools_LIBRARIES}
+    ${rviz_visual_tools_LIBRARIES}
     ${rt_logger_LIBRARIES}
     ${ddynamic_reconfigure_LIBRARIES}
     ${ocs2_msgs_LIBRARIES})
 
-add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
-target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES})
+#add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
+#target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES})
 
 install(
   DIRECTORY include/${ROS_VERSION}/${PROJECT_NAME}
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
-install(TARGETS wolf_controller_ros plot_node
+install(TARGETS wolf_controller_ros #plot_node
     ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
