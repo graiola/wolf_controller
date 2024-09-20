@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+
+# WOLF Keyboard controller for ROS2
+
+import os
+os.environ["SDL_AUDIODRIVER"] = "dummy"  # Disable audio initialization
+
+import pygame
+
+import rclpy
+from rclpy.node import Node
+import numpy as np
+
+from geometry_msgs.msg import Twist
+from std_srvs.srv import Trigger
+
+from ament_index_python.packages import get_package_share_directory
+
+path_full_keyboard_buttons = get_package_share_directory('wolf_controller_ros') + "/resources/keyboard_controls.png"
+path_simple_keyboard_buttons = get_package_share_directory('wolf_controller_ros') + "/resources/simple_keyboard_controls.png"
+path_icon = get_package_share_directory('wolf_controller_ros') + "/resources/wolf_logo.png"
+
+msg = """
+Reading from the keyboard  and Publishing to Twist!
+---------------------------
+Moving around:
+  q   w   e
+  a   s   d
+
+Orientation:
+   u    
+h  j  k  
+
+o : up (+z)
+l : down (-z)
+r: reset base
+"""
+
+moveBindings = {  #     x y z r p y
+    "w": np.array([1, 0, 0, 0, 0, 0]),
+    "s": np.array([-1, 0, 0, 0, 0, 0]),
+    "a": np.array([0, 0, 0, 0, 0, 1]),
+    "d": np.array([0, 0, 0, 0, 0, -1]),
+    "q": np.array([0, 1, 0, 0, 0, 0]),
+    "e": np.array([0, -1, 0, 0, 0, 0]),
+    "o": np.array([0, 0, 1, 0, 0, 0]),
+    "l": np.array([0, 0, -1, 0, 0, 0]),
+    "u": np.array([0, 0, 0, 0, 1, 0]),
+    "j": np.array([0, 0, 0, 0, -1, 0]),
+    "h": np.array([0, 0, 0, 1, 0, 0]),
+    "k": np.array([0, 0, 0, -1, 0, 0])
+}
+
+
+class TriggerService:
+    def __init__(self, node, service_name):
+        self.called = False
+        self.__service = node.create_client(Trigger, service_name)
+        while not self.__service.wait_for_service(timeout_sec=1.0):
+            node.get_logger().info(f"Waiting for {service_name} service...")
+
+    def __call__(self):
+        req = Trigger.Request()
+        future = self.__service.call_async(req)
+        rclpy.spin_until_future_complete(node, future)
+        self.called = True
+
+    def reset(self):
+        self.called = False
+
+
+class TriggerButton:
+    def __init__(self, data):
+        self.called = False
+        self.data = data
+
+    def __call__(self, data):
+        self.called = True
+        self.data = data
+
+    def reset(self):
+        self.called = False
+
+
+class WolfKeyboardController(Node):
+    def __init__(self):
+        super().__init__('wolf_keyboard_node')
+        pygame.init()
+
+        white = (255, 255, 255)
+        X = 710
+        Y = 440
+        self.display_surface = pygame.display.set_mode((X, Y))
+
+        self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
+        if self.robot_name == '' or self.robot_name == '/':
+            self.robot_name = 'wolf_keyboard'
+
+        pygame.display.set_caption(f'{self.robot_name} controls: press 1 to change view')
+
+        # create a surface object, image is drawn on it.
+        self.simple_view = TriggerButton(True)
+        self.image = pygame.image.load(path_simple_keyboard_buttons)
+        icon = pygame.image.load(path_icon)
+        pygame.display.set_icon(icon)
+
+        self.twist_pub = self.create_publisher(Twist, 'wolf_controller/keyboard', 1)
+
+        # Trigger services handlers
+        self.reset_base_service = TriggerService(self, 'wolf_controller/reset_base')
+        self.switch_posture_service = TriggerService(self, 'wolf_controller/switch_posture')
+        self.emergency_stop_service = TriggerService(self, 'wolf_controller/emergency_stop')
+        self.switch_gait_service = TriggerService(self, 'wolf_controller/switch_gait')
+        self.activate_push_recovery_service = TriggerService(self, 'wolf_controller/activate_push_recovery')
+        self.increase_step_service = TriggerService(self, 'wolf_controller/increase_step_height')
+        self.decrease_step_service = TriggerService(self, 'wolf_controller/decrease_step_height')
+        self.switch_control_mode_service = TriggerService(self, 'wolf_controller/switch_control_mode')
+
+        self.timer = self.create_timer(0.01, self.main_loop)
+
+    def main_loop(self):
+        self.display_surface.fill((255, 255, 255))
+        self.display_surface.blit(self.image, (-125, -50))
+
+        pygame.event.pump()
+        keys = pygame.key.get_pressed()
+
+        command = np.array([0, 0, 0, 0, 0, 0])
+
+        if keys[ord("1")] and not self.simple_view.called:
+            if self.simple_view.data:
+                self.simple_view(False)
+                self.image = pygame.image.load(path_full_keyboard_buttons)
+            else:
+                self.simple_view(True)
+                self.image = pygame.image.load(path_simple_keyboard_buttons)
+        # here triggers services are handled
+        elif keys[ord("r")] and not self.reset_base_service.called:
+            self.reset_base_service()
+        elif keys[pygame.K_RETURN] and not self.switch_posture_service.called:
+            self.switch_posture_service()
+        elif keys[pygame.K_ESCAPE] and not self.emergency_stop_service.called:
+            self.emergency_stop_service()
+        elif keys[ord("g")] and not self.switch_gait_service.called:
+            self.switch_gait_service()
+        elif keys[pygame.K_TAB] and not self.activate_push_recovery_service.called:
+            self.activate_push_recovery_service()
+        elif keys[pygame.K_RSHIFT] and not self.increase_step_service.called:
+            self.increase_step_service()
+        elif keys[pygame.K_LSHIFT] and not self.decrease_step_service.called:
+            self.decrease_step_service()
+        elif keys[pygame.K_SPACE] and not self.switch_control_mode_service.called:
+            self.switch_control_mode_service()
+        # here the twist references are handled
+        else:
+            for key in moveBindings:
+                if keys[ord(key)]:
+                    command += moveBindings[key]
+
+            twist = Twist()
+            twist.linear.x = command[0]
+            twist.linear.y = command[1]
+            twist.linear.z = command[2]
+            twist.angular.x = command[3]
+            twist.angular.y = command[4]
+            twist.angular.z = command[5]
+            self.twist_pub.publish(twist)
+
+        for event in pygame.event.get():
+            if event.type == pygame.KEYUP:  # these events are triggered only when the button is released!
+                self.switch_posture_service.reset()
+                self.reset_base_service.reset()
+                self.emergency_stop_service.reset()
+                self.switch_gait_service.reset()
+                self.activate_push_recovery_service.reset()
+                self.increase_step_service.reset()
+                self.decrease_step_service.reset()
+                self.switch_control_mode_service.reset()
+                self.simple_view.reset()
+
+        pygame.display.update()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = WolfKeyboardController()
+    rclpy.spin(node)
+
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
+

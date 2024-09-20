@@ -141,6 +141,6 @@ install(DIRECTORY rviz/
 install(DIRECTORY plotjuggler/
   DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/plotjuggler)
 
-install(PROGRAMS scripts/keyboard_node
+install(PROGRAMS scripts/${ROS_VERSION}/keyboard_node
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME})
 
