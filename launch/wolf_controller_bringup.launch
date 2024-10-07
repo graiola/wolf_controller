@@ -77,14 +77,14 @@
 
     <!-- Spawn the robot in Gazebo -->
     <node name="spawn_robot" pkg="wolf_description_utils" type="go0" output="screen" if="$(arg spawn_robot)">
-        <param name="robot_name"      value="$(arg robot_name)"/>
-        <param name="robot_model"     value="$(arg robot_model)"/>
-        <param name="initial_xyz"     value="$(arg initial_xyz)"/>
-        <param name="initial_rpy"     value="$(arg initial_rpy)"/>
+        <param name="robot_name"               value="$(arg robot_name)"/>
+        <param name="robot_model"              value="$(arg robot_model)"/>
+        <param name="initial_xyz"              value="$(arg initial_xyz)"/>
+        <param name="initial_rpy"              value="$(arg initial_rpy)"/>
     </node>
 
     <group if="$(eval robot_name != '')">
-         <include file="$(find wolf_controller_ros)/launch/include/wolf_controller_ns.xml" ns="$(arg robot_name)">
+         <include file="$(find wolf_controller)/launch/include/wolf_controller_ns.xml" ns="$(arg robot_name)">
              <arg name="robot_model"      value="$(arg robot_model)"/>
              <arg name="robot_name"       value="$(arg robot_name)"/>
              <arg name="sensors"          value="$(arg sensors)" />
@@ -106,7 +106,7 @@
     </group>
 
     <group if="$(eval robot_name == '')">
-        <include file="$(find wolf_controller_ros)/launch/include/wolf_controller_ns.xml">
+        <include file="$(find wolf_controller)/launch/include/wolf_controller_ns.xml">
             <arg name="robot_model"      value="$(arg robot_model)"/>
             <arg name="robot_name"       value="$(arg robot_name)"/>
             <arg name="sensors"          value="$(arg sensors)" />

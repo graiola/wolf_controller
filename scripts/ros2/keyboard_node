@@ -16,9 +16,9 @@ from std_srvs.srv import Trigger
 
 from ament_index_python.packages import get_package_share_directory
 
-path_full_keyboard_buttons = get_package_share_directory('wolf_controller_ros') + "/resources/keyboard_controls.png"
-path_simple_keyboard_buttons = get_package_share_directory('wolf_controller_ros') + "/resources/simple_keyboard_controls.png"
-path_icon = get_package_share_directory('wolf_controller_ros') + "/resources/wolf_logo.png"
+path_full_keyboard_buttons = get_package_share_directory('wolf_controller') + "/resources/keyboard_controls.png"
+path_simple_keyboard_buttons = get_package_share_directory('wolf_controller') + "/resources/simple_keyboard_controls.png"
+path_icon = get_package_share_directory('wolf_controller') + "/resources/wolf_logo.png"
 
 msg = """
 Reading from the keyboard  and Publishing to Twist!
@@ -53,30 +53,42 @@ moveBindings = {  #     x y z r p y
 
 
 class TriggerService:
-    def __init__(self, node, service_name):
+    def __init__(self, node, service_name, timeout=5):
         self.called = False
+        self.node = node
         self.__service = node.create_client(Trigger, service_name)
-        while not self.__service.wait_for_service(timeout_sec=1.0):
-            node.get_logger().info(f"Waiting for {service_name} service...")
+
+        # Wait for the service to become available with a retry limit
+        if not self.__service.wait_for_service(timeout_sec=timeout):
+            node.get_logger().error(f"{service_name} service not available after {timeout} seconds.")
+        else:
+            node.get_logger().info(f"{service_name} service is now available.")
 
     def __call__(self):
         req = Trigger.Request()
+        # Call the service asynchronously
         future = self.__service.call_async(req)
-        rclpy.spin_until_future_complete(node, future)
-        self.called = True
+        rclpy.spin_until_future_complete(self.node, future)  # Pass the correct node
+        if future.result() is not None:
+            self.called = True
+            return future.result()  # Return the result of the service call
+        else:
+            self.node.get_logger().error('Service call failed.')
+            return None
 
     def reset(self):
         self.called = False
 
 
 class TriggerButton:
-    def __init__(self, data):
+    def __init__(self, data=None):
         self.called = False
-        self.data = data
+        self.data = data  # Store the initial data
 
-    def __call__(self, data):
+    def __call__(self, new_data):
+        """Update the button state and data."""
         self.called = True
-        self.data = data
+        self.data = new_data  # Update the data with new input
 
     def reset(self):
         self.called = False
@@ -92,9 +104,11 @@ class WolfKeyboardController(Node):
         Y = 440
         self.display_surface = pygame.display.set_mode((X, Y))
 
-        self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
-        if self.robot_name == '' or self.robot_name == '/':
-            self.robot_name = 'wolf_keyboard'
+        #self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
+        #if self.robot_name == '' or self.robot_name == '/':
+        #    self.robot_name = 'wolf_keyboard'
+
+        self.robot_name = 'wolf_keyboard'
 
         pygame.display.set_caption(f'{self.robot_name} controls: press 1 to change view')
 
@@ -107,14 +121,14 @@ class WolfKeyboardController(Node):
         self.twist_pub = self.create_publisher(Twist, 'wolf_controller/keyboard', 1)
 
         # Trigger services handlers
-        self.reset_base_service = TriggerService(self, 'wolf_controller/reset_base')
-        self.switch_posture_service = TriggerService(self, 'wolf_controller/switch_posture')
-        self.emergency_stop_service = TriggerService(self, 'wolf_controller/emergency_stop')
-        self.switch_gait_service = TriggerService(self, 'wolf_controller/switch_gait')
-        self.activate_push_recovery_service = TriggerService(self, 'wolf_controller/activate_push_recovery')
-        self.increase_step_service = TriggerService(self, 'wolf_controller/increase_step_height')
-        self.decrease_step_service = TriggerService(self, 'wolf_controller/decrease_step_height')
-        self.switch_control_mode_service = TriggerService(self, 'wolf_controller/switch_control_mode')
+        self.reset_base_service = TriggerService(self, '/reset_base')
+        self.switch_posture_service = TriggerService(self, '/switch_posture')
+        self.emergency_stop_service = TriggerService(self, '/emergency_stop')
+        self.switch_gait_service = TriggerService(self, '/switch_gait')
+        self.activate_push_recovery_service = TriggerService(self, '/activate_push_recovery')
+        self.increase_step_service = TriggerService(self, '/increase_step_height')
+        self.decrease_step_service = TriggerService(self, '/decrease_step_height')
+        self.switch_control_mode_service = TriggerService(self, '/switch_control_mode')
 
         self.timer = self.create_timer(0.01, self.main_loop)
 
@@ -158,12 +172,12 @@ class WolfKeyboardController(Node):
                     command += moveBindings[key]
 
             twist = Twist()
-            twist.linear.x = command[0]
-            twist.linear.y = command[1]
-            twist.linear.z = command[2]
-            twist.angular.x = command[3]
-            twist.angular.y = command[4]
-            twist.angular.z = command[5]
+            twist.linear.x = float(command[0])
+            twist.linear.y = float(command[1])
+            twist.linear.z = float(command[2])
+            twist.angular.x = float(command[3])
+            twist.angular.y = float(command[4])
+            twist.angular.z = float(command[5])
             self.twist_pub.publish(twist)
 
         for event in pygame.event.get():

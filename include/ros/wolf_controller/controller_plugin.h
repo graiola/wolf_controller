@@ -14,8 +14,6 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
-// PluginLib
-#include <pluginlib/class_list_macros.hpp>
 // ROS control
 #include <controller_interface/controller.h>
 #include <controller_interface/multi_interface_controller.h>
@@ -29,8 +27,8 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <memory>
 // WoLF
 #include <wolf_controller_core/controller_core.h>
-#include <wolf_controller_ros/devices/interface.h>
-#include <wolf_controller_ros/controller_wrapper.h>
+#include <wolf_controller/devices/interface.h>
+#include <wolf_controller/controller_wrapper.h>
 #include <wolf_hardware_interface/ground_truth_interface.h>
 #include <wolf_hardware_interface/contact_switch_sensor_interface.h>
 #include <wolf_controller_utils/tools.h>
@@ -41,7 +39,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 namespace wolf_controller
 {
 
-class Controller : public
+class WolfController : public
     controller_interface::MultiInterfaceController<hardware_interface::EffortJointInterface, // Mandatory interface
     hardware_interface::ImuSensorInterface, // Mandatory interface
     hardware_interface::GroundTruthInterface, // Optional interface
@@ -49,28 +47,28 @@ class Controller : public
 {
 public:
 
-  const std::string CLASS_NAME = "Controller";
+  const std::string CLASS_NAME = "WolfController";
 
   /**
-     * @brief Shared pointer to Controller
+     * @brief Shared pointer to WolfController
      */
-  typedef std::shared_ptr<Controller> Ptr;
+  typedef std::shared_ptr<WolfController> Ptr;
 
   /**
-     * @brief Weak pointer to Controller
+     * @brief Weak pointer to WolfController
      */
-  typedef std::weak_ptr<Controller> WeakPtr;
+  typedef std::weak_ptr<WolfController> WeakPtr;
 
   /**
-     * @brief Shared pointer to const Controller
+     * @brief Shared pointer to const WolfController
      */
-  typedef std::shared_ptr<const Controller> ConstPtr;
+  typedef std::shared_ptr<const WolfController> ConstPtr;
 
   /** @brief Constructor function */
-  Controller();
+  WolfController();
 
   /** @brief Destructor function */
-  ~Controller();
+  ~WolfController();
 
   /**
          * @brief Initializes sample controller

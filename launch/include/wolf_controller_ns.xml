@@ -50,11 +50,11 @@
     <include file="$(find spacenav_node)/launch/classic.launch" if="$(eval arg('input_device') == 'spacemouse')"/>
     <!-- Keyboard node -->
     <group if="$(eval input_device == 'keyboard')">
-         <node pkg="wolf_controller_ros" type="keyboard_node" name="keyboard_node" output="screen" respawn="true"/>
+         <node pkg="wolf_controller" type="keyboard_node" name="keyboard_node" output="screen" respawn="true"/>
     </group>
 
-    <!-- Loading joint states publisher configurations from YAML file to parameter server -->
-    <rosparam file="$(find wolf_controller_ros)/params/joint_state_publisher.yaml" command="load"/>
+    <!-- Loading some ros_control configurations from YAML file to parameter server -->
+    <rosparam file="$(find wolf_controller)/params/config.ros.yaml" command="load"/>
 
     <!-- Load controller config -->
     <group if="$(eval arm_name != '')">
@@ -65,7 +65,7 @@
     </group>
 
     <!-- Spawn wolf controller and joint state publisher -->
-    <include file="$(find wolf_controller_ros)/launch/wolf_controller_spawn.launch">
+    <include file="$(find wolf_controller)/launch/wolf_controller_spawn.launch">
           <arg name="extra_controllers" value="joint_state_publisher" />
     </include>
 
@@ -76,15 +76,15 @@
 
     <!-- GUI nodes -->
     <!-- plot_node -->
-    <node name="wolf_plot_node" pkg="wolf_controller_ros" type="plot_node" output="screen"
+    <node name="wolf_plot_node" pkg="wolf_controller" type="plot_node" output="screen"
           if="$(eval arg('full_gui') or arg('plot_node_gui'))"/>
     <!-- plotjuggler -->
     <node name="wolf_plotjuggler" pkg="plotjuggler" type="plotjuggler"
-          args="$(eval '--layout '+find('wolf_controller_ros')+'/plotjuggler/controller.xml --nosplash')"
+          args="$(eval '--layout '+find('wolf_controller')+'/plotjuggler/controller.xml --nosplash')"
           if="$(eval arg('full_gui') or arg('plotjuggler_gui'))"/>
     <!-- rviz -->
     <node name="wolf_rviz" pkg="rviz" type="rviz"
-          args="$(eval '-d '+find('wolf_controller_ros')+'/rviz/controller.rviz')"
+          args="$(eval '-d '+find('wolf_controller')+'/rviz/controller.rviz')"
           if="$(eval arg('full_gui')or arg('rviz_gui'))"/>
     <!-- rqt_reconfigure -->
     <node name="wolf_gui" pkg="rqt_reconfigure" type="rqt_reconfigure"

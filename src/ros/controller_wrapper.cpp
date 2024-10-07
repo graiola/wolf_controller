@@ -6,7 +6,7 @@
  */
 
 // WoLF
-#include <wolf_controller_ros/controller_wrapper.h>
+#include <wolf_controller/controller_wrapper.h>
 #include <wolf_controller_core/state_machine.h>
 
 // System

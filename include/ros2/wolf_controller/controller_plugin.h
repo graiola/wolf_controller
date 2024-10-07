@@ -15,23 +15,16 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <tf2_ros/transform_broadcaster.h>
 #include <nav_msgs/msg/odometry.hpp>
 
-// PluginLib
-#include <pluginlib/class_list_macros.hpp>
-
 // ROS2 control
 #include <controller_interface/controller_interface.hpp>
 #include <hardware_interface/loaned_command_interface.hpp>
 #include <hardware_interface/loaned_state_interface.hpp>
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
-//#include <hardware_interface/imu_sensor_interface.hpp>
-//#include <hardware_interface/joint_command_interface.hpp>
 
 // WoLF
 #include <wolf_controller_core/controller_core.h>
-#include <wolf_controller_ros/devices/interface.h>
-#include <wolf_controller_ros/controller_wrapper.h>
-//#include <wolf_hardware_interface/ground_truth_interface.h>
-//#include <wolf_hardware_interface/contact_switch_sensor_interface.h>
+#include <wolf_controller/devices/interface.h>
+#include <wolf_controller/controller_wrapper.h>
 #include <wolf_controller_utils/tools.h>
 
 // Eigen
@@ -47,33 +40,33 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 namespace wolf_controller
 {
 
-class Controller : public
+class WolfController : public
     controller_interface::ControllerInterface
 {
 public:
 
-  const std::string CLASS_NAME = "Controller";
+  const std::string CLASS_NAME = "WolfController";
 
   /**
-     * @brief Shared pointer to Controller
+     * @brief Shared pointer to WolfController
      */
-  typedef std::shared_ptr<Controller> Ptr;
+  typedef std::shared_ptr<WolfController> Ptr;
 
   /**
-     * @brief Weak pointer to Controller
+     * @brief Weak pointer to WolfController
      */
-  typedef std::weak_ptr<Controller> WeakPtr;
+  typedef std::weak_ptr<WolfController> WeakPtr;
 
   /**
-     * @brief Shared pointer to const Controller
+     * @brief Shared pointer to const WolfController
      */
-  typedef std::shared_ptr<const Controller> ConstPtr;
+  typedef std::shared_ptr<const WolfController> ConstPtr;
 
   /** @brief Constructor function */
-  Controller();
+  WolfController();
 
   /** @brief Destructor function */
-  ~Controller() override;
+  ~WolfController() override;
 
   controller_interface::return_type init(const std::string &controller_name) override;
 
@@ -84,6 +77,8 @@ public:
   controller_interface::InterfaceConfiguration state_interface_configuration() const;
 
   CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
+
+  CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
 
 private:
 

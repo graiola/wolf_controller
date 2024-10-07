@@ -11,7 +11,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #define DEVICES_TWIST_H
 
 #include <geometry_msgs/msg/twist.hpp>
-#include <wolf_controller_ros/devices/ros.h>
+#include <wolf_controller/devices/ros.h>
 
 class TwistHandler : public DeviceHandlerRosInterface<geometry_msgs::msg::Twist>
 {

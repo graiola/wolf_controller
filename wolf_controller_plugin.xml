@@ -1,0 +1,19 @@
+<library path="libwolf_controller">
+        <class name="wolf_controller/WolfController"
+                   type="wolf_controller::WolfController"
+                   base_class_type="controller_interface::ControllerBase">
+                <description>
+                        WoLF controller ros plugin.
+                </description>
+        </class>
+</library>
+
+<library path="wolf_controller">
+        <class name="wolf_controller/WolfController"
+                   type="wolf_controller::WolfController"
+                   base_class_type="controller_interface::ControllerInterface">
+                <description>
+                        WoLF controller ros2 plugin.
+                </description>
+        </class>
+</library>

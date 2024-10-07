@@ -11,7 +11,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #define DEVICES_JOY_H
 
 #include <sensor_msgs/Joy.h>
-#include <wolf_controller_ros/devices/ros.h>
+#include <wolf_controller/devices/ros.h>
 #include <wolf_controller_core/common.h>
 #include <wolf_controller_utils/tools.h>
 

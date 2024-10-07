@@ -7,11 +7,11 @@
  */
 
 // WoLF
-#include <wolf_controller_ros/controller_plugin.h>
-#include <wolf_controller_ros/controller_wrapper.h>
-#include <wolf_controller_ros/devices/joy.h>
-#include <wolf_controller_ros/devices/twist.h>
-#include <wolf_controller_ros/devices/keyboard.h>
+#include <wolf_controller/controller_plugin.h>
+#include <wolf_controller/controller_wrapper.h>
+#include <wolf_controller/devices/joy.h>
+#include <wolf_controller/devices/twist.h>
+#include <wolf_controller/devices/keyboard.h>
 
 // WoLF controller utils
 #include <wolf_controller_utils/tools.h>
@@ -19,6 +19,10 @@
 // ROS
 #include <tf2/transform_datatypes.h>
 #include <tf2_eigen/tf2_eigen.h>
+#include <rcl_interfaces/srv/get_parameters.hpp>
+
+#include <variant> // For std::variant
+#include <optional> // For std::optional
 
 // RT GUI
 #ifdef RT_GUI
@@ -35,8 +39,181 @@ using namespace rt_logger;
 using namespace wolf_controller_utils;
 
 namespace wolf_controller {
+using GetParameters = rcl_interfaces::srv::GetParameters;
 
-Controller::Controller()
+// Function to get a string parameter from a remote node
+std::string get_string_parameter_from_remote_node(
+    const std::shared_ptr<rclcpp::Node>& node, const std::string& param_path, const std::string& default_value = "", std::chrono::seconds timeout = std::chrono::seconds(10))
+{
+    std::string delimiter = "/";
+    size_t pos = param_path.find(delimiter);
+    if (pos == std::string::npos) {
+        RCLCPP_ERROR(node->get_logger(), "Invalid parameter path format: %s. Expected format: '/node_name/param_name'", param_path.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    std::string remote_node_name = param_path.substr(0, pos);
+    std::string param_name = param_path.substr(pos + 1);
+
+    auto client = node->create_client<GetParameters>(remote_node_name + "/get_parameters");
+    if (!client->wait_for_service(timeout)) {
+        RCLCPP_ERROR(node->get_logger(), "Service %s/get_parameters not available!", remote_node_name.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    auto request = std::make_shared<GetParameters::Request>();
+    request->names.push_back(param_name);
+
+    auto future = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, future) == rclcpp::FutureReturnCode::SUCCESS) {
+        auto result = future.get();
+        if (!result->values.empty()) {
+            auto param_value = result->values[0];
+            if (param_value.type == rcl_interfaces::msg::ParameterType::PARAMETER_STRING) {
+                return param_value.string_value;  // Return the found value
+            } else {
+                RCLCPP_ERROR(node->get_logger(), "Parameter %s is not of type string", param_name.c_str());
+            }
+        } else {
+            RCLCPP_ERROR(node->get_logger(), "Parameter %s not found on remote node %s", param_name.c_str(), remote_node_name.c_str());
+        }
+    } else {
+        RCLCPP_ERROR(node->get_logger(), "Service call to get parameter %s from node %s failed", param_name.c_str(), remote_node_name.c_str());
+    }
+
+    return default_value;  // Return default value if the parameter couldn't be retrieved
+}
+
+// Function to get an integer parameter from a remote node
+int64_t get_int_parameter_from_remote_node(
+    const std::shared_ptr<rclcpp::Node>& node, const std::string& param_path, int64_t default_value = 0, std::chrono::seconds timeout = std::chrono::seconds(10))
+{
+    std::string delimiter = "/";
+    size_t pos = param_path.find(delimiter);
+    if (pos == std::string::npos) {
+        RCLCPP_ERROR(node->get_logger(), "Invalid parameter path format: %s. Expected format: '/node_name/param_name'", param_path.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    std::string remote_node_name = param_path.substr(0, pos);
+    std::string param_name = param_path.substr(pos + 1);
+
+    auto client = node->create_client<GetParameters>(remote_node_name + "/get_parameters");
+    if (!client->wait_for_service(timeout)) {
+        RCLCPP_ERROR(node->get_logger(), "Service %s/get_parameters not available!", remote_node_name.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    auto request = std::make_shared<GetParameters::Request>();
+    request->names.push_back(param_name);
+
+    auto future = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, future) == rclcpp::FutureReturnCode::SUCCESS) {
+        auto result = future.get();
+        if (!result->values.empty()) {
+            auto param_value = result->values[0];
+            if (param_value.type == rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
+                return param_value.integer_value;  // Return the found value
+            } else {
+                RCLCPP_ERROR(node->get_logger(), "Parameter %s is not of type integer", param_name.c_str());
+            }
+        } else {
+            RCLCPP_ERROR(node->get_logger(), "Parameter %s not found on remote node %s", param_name.c_str(), remote_node_name.c_str());
+        }
+    } else {
+        RCLCPP_ERROR(node->get_logger(), "Service call to get parameter %s from node %s failed", param_name.c_str(), remote_node_name.c_str());
+    }
+
+    return default_value;  // Return default value if the parameter couldn't be retrieved
+}
+
+// Function to get a double parameter from a remote node
+double get_double_parameter_from_remote_node(
+    const std::shared_ptr<rclcpp::Node>& node, const std::string& param_path, double default_value = 0.0, std::chrono::seconds timeout = std::chrono::seconds(10))
+{
+    std::string delimiter = "/";
+    size_t pos = param_path.find(delimiter);
+    if (pos == std::string::npos) {
+        RCLCPP_ERROR(node->get_logger(), "Invalid parameter path format: %s. Expected format: '/node_name/param_name'", param_path.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    std::string remote_node_name = param_path.substr(0, pos);
+    std::string param_name = param_path.substr(pos + 1);
+
+    auto client = node->create_client<GetParameters>(remote_node_name + "/get_parameters");
+    if (!client->wait_for_service(timeout)) {
+        RCLCPP_ERROR(node->get_logger(), "Service %s/get_parameters not available!", remote_node_name.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    auto request = std::make_shared<GetParameters::Request>();
+    request->names.push_back(param_name);
+
+    auto future = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, future) == rclcpp::FutureReturnCode::SUCCESS) {
+        auto result = future.get();
+        if (!result->values.empty()) {
+            auto param_value = result->values[0];
+            if (param_value.type == rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE) {
+                return param_value.double_value;  // Return the found value
+            } else {
+                RCLCPP_ERROR(node->get_logger(), "Parameter %s is not of type double", param_name.c_str());
+            }
+        } else {
+            RCLCPP_ERROR(node->get_logger(), "Parameter %s not found on remote node %s", param_name.c_str(), remote_node_name.c_str());
+        }
+    } else {
+        RCLCPP_ERROR(node->get_logger(), "Service call to get parameter %s from node %s failed", param_name.c_str(), remote_node_name.c_str());
+    }
+
+    return default_value;  // Return default value if the parameter couldn't be retrieved
+}
+
+// Function to get a boolean parameter from a remote node
+bool get_bool_parameter_from_remote_node(
+    const std::shared_ptr<rclcpp::Node>& node, const std::string& param_path, bool default_value = false, std::chrono::seconds timeout = std::chrono::seconds(10))
+{
+    std::string delimiter = "/";
+    size_t pos = param_path.find(delimiter);
+    if (pos == std::string::npos) {
+        RCLCPP_ERROR(node->get_logger(), "Invalid parameter path format: %s. Expected format: '/node_name/param_name'", param_path.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    std::string remote_node_name = param_path.substr(0, pos);
+    std::string param_name = param_path.substr(pos + 1);
+
+    auto client = node->create_client<GetParameters>(remote_node_name + "/get_parameters");
+    if (!client->wait_for_service(timeout)) {
+        RCLCPP_ERROR(node->get_logger(), "Service %s/get_parameters not available!", remote_node_name.c_str());
+        return default_value;  // Return default value on error
+    }
+
+    auto request = std::make_shared<GetParameters::Request>();
+    request->names.push_back(param_name);
+
+    auto future = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, future) == rclcpp::FutureReturnCode::SUCCESS) {
+        auto result = future.get();
+        if (!result->values.empty()) {
+            auto param_value = result->values[0];
+            if (param_value.type == rcl_interfaces::msg::ParameterType::PARAMETER_BOOL) {
+                return param_value.bool_value;  // Return the found value
+            } else {
+                RCLCPP_ERROR(node->get_logger(), "Parameter %s is not of type bool", param_name.c_str());
+            }
+        } else {
+            RCLCPP_ERROR(node->get_logger(), "Parameter %s not found on remote node %s", param_name.c_str(), remote_node_name.c_str());
+        }
+    } else {
+        RCLCPP_ERROR(node->get_logger(), "Service call to get parameter %s from node %s failed", param_name.c_str(), remote_node_name.c_str());
+    }
+
+    return default_value;  // Return default value if the parameter couldn't be retrieved
+}
+
+WolfController::WolfController()
   :ControllerInterface()
   ,stopping_(false)
   ,publish_odom_tf_(false)
@@ -46,12 +223,12 @@ Controller::Controller()
 
 }
 
-Controller::~Controller()
+WolfController::~WolfController()
 {
 
 }
 
-controller_interface::return_type Controller::init(const string &controller_name)
+controller_interface::return_type WolfController::init(const string &controller_name)
 {
   // initialize lifecycle node
   auto ret = ControllerInterface::init(controller_name);
@@ -59,6 +236,8 @@ controller_interface::return_type Controller::init(const string &controller_name
   {
     return ret;
   }
+
+  prev_time_ = get_node()->get_clock()->now();
 
   std::string urdf, srdf;
   std::string input_device = "keyboard";
@@ -70,8 +249,8 @@ controller_interface::return_type Controller::init(const string &controller_name
     auto_declare<double>("period", period_);
     auto_declare<std::string>("robot_name", robot_name_);
     auto_declare<std::string>("tf_prefix", tf_prefix_);
-    auto_declare<std::string>("robot_description", urdf);
-    auto_declare<std::string>("robot_description_semantic", srdf);
+    //auto_declare<std::string>("/robot_description/description", urdf);
+    //auto_declare<std::string>("/robot_description_semantic/description", srdf);
     auto_declare<std::string>("imu_sensor_name", imu_name_);
     auto_declare<std::string>("input_device", input_device);
     auto_declare<bool>("use_contact_sensors", use_contact_sensors);
@@ -83,6 +262,18 @@ controller_interface::return_type Controller::init(const string &controller_name
     fprintf(stderr, "Exception thrown during init stage with message: %s \n", e.what());
     return controller_interface::return_type::ERROR;
   }
+
+  // configure
+  period_             = get_node()->get_parameter("period").as_double();
+  robot_name_         = get_node()->get_parameter("robot_name").as_string();
+  tf_prefix_          = get_node()->get_parameter("tf_prefix").as_string();
+  urdf                = get_string_parameter_from_remote_node(get_node(), "robot_description/description");
+  srdf                = get_string_parameter_from_remote_node(get_node(), "robot_description_semantic/description");
+  imu_name_           = get_node()->get_parameter("imu_sensor_name").as_string();
+  input_device        = get_node()->get_parameter("input_device").as_string();
+  use_contact_sensors = get_node()->get_parameter("use_contact_sensors").as_bool();
+  publish_odom_tf_    = get_node()->get_parameter("publish_odom_tf").as_bool();
+  publish_odom_msg_   = get_node()->get_parameter("publish_odom_msg").as_bool();
 
   // Create the controller core
   controller_ = std::make_shared<ControllerCore>();
@@ -105,12 +296,12 @@ controller_interface::return_type Controller::init(const string &controller_name
   controller_->getIDProblem()->init(robot_name_,period_);
 
   // Spawn the odom publisher thread
-  odom_publisher_thread_= std::make_shared<std::thread>(&Controller::odomPublisher,this);
+  odom_publisher_thread_= std::make_shared<std::thread>(&WolfController::odomPublisher,this);
 
   return controller_interface::return_type::OK;
 }
 
-controller_interface::InterfaceConfiguration Controller::command_interface_configuration() const
+controller_interface::InterfaceConfiguration WolfController::command_interface_configuration() const
 {
   std::vector<std::string> conf_names;
   for (const auto & joint_name : controller_->getJointNames())
@@ -120,7 +311,7 @@ controller_interface::InterfaceConfiguration Controller::command_interface_confi
   return {controller_interface::interface_configuration_type::INDIVIDUAL, conf_names};
 }
 
-controller_interface::InterfaceConfiguration Controller::state_interface_configuration() const
+controller_interface::InterfaceConfiguration WolfController::state_interface_configuration() const
 {
   std::vector<std::string> conf_names;
 
@@ -147,7 +338,12 @@ controller_interface::InterfaceConfiguration Controller::state_interface_configu
   return {controller_interface::interface_configuration_type::INDIVIDUAL, conf_names};
 }
 
-rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Controller::on_configure(const rclcpp_lifecycle::State &previous_state)
+rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfController::on_configure(const rclcpp_lifecycle::State &previous_state)
+{
+  return CallbackReturn::SUCCESS;
+}
+
+rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfController::on_activate(const rclcpp_lifecycle::State &previous_state)
 {
 
   // register handles for position, velocity, and effort state interfaces
@@ -287,7 +483,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Contro
   return CallbackReturn::SUCCESS;
 }
 
-void Controller::readJoints()
+void WolfController::readJoints()
 {
   for (unsigned int i = 0; i < joint_handles_.size(); i++)
   {
@@ -298,7 +494,7 @@ void Controller::readJoints()
   }
 }
 
-void Controller::readImu()
+void WolfController::readImu()
 {
   tmp_quat_.w() = imu_handle_->orientation_w.get().get_value();
   tmp_quat_.x() = imu_handle_->orientation_x.get().get_value();
@@ -318,7 +514,7 @@ void Controller::readImu()
   controller_->setImuAccelerometer(tmp_acc_);
 }
 
-controller_interface::return_type Controller::update()
+controller_interface::return_type WolfController::update()
 {
   /*auto logger = node_->get_logger();
   if (get_current_state().id() == State::PRIMARY_STATE_INACTIVE)
@@ -331,9 +527,9 @@ controller_interface::return_type Controller::update()
     return controller_interface::return_type::OK;
   }*/
 
-  const auto time = node_->get_clock()->now();
+  const rclcpp::Time& time = node_->get_clock()->now();
 
-  const auto period = time - prev_time_;
+  rclcpp::Duration period = time - prev_time_;
 
   // Update input devices
   devices_.writeToOutput(period_);
@@ -370,7 +566,7 @@ controller_interface::return_type Controller::update()
   return controller_interface::return_type::OK;
 }
 
-void Controller::odomPublisher()
+void WolfController::odomPublisher()
 {
   RCLCPP_DEBUG(get_node()->get_logger(), "Start the odomPublisher");
 
@@ -511,4 +707,6 @@ void Controller::odomPublisher()
 
 } //namespace
 
-PLUGINLIB_EXPORT_CLASS(wolf_controller::Controller, controller_interface::ControllerInterface);
+#include <pluginlib/class_list_macros.hpp>
+
+PLUGINLIB_EXPORT_CLASS(wolf_controller::WolfController, controller_interface::ControllerInterface)

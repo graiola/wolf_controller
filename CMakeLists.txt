@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(wolf_controller_ros)
+project(wolf_controller)
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++17" COMPILER_SUPPORTS_CXX17)
@@ -21,16 +21,19 @@ endif()
 # ROS
 find_package(catkin QUIET)
 find_package(ament_cmake QUIET)
+find_package(pluginlib REQUIRED)
 
 if(${catkin_FOUND})
     set(ROS_VERSION "ros")
-    catkin_package(INCLUDE_DIRS include LIBRARIES wolf_controller_ros)
+    catkin_package(INCLUDE_DIRS include LIBRARIES wolf_controller CATKIN_DEPENDS controller_interface)
     add_definitions(-DROS)
     message(STATUS "Add ROS definition")
 elseif(${ament_cmake_FOUND})
     set(ROS_VERSION "ros2")
+    pluginlib_export_plugin_description_file(controller_interface wolf_controller_plugin.xml)
+    ament_export_dependencies(controller_interface)
     ament_export_include_directories(include)
-    ament_export_libraries(wolf_controller_ros)
+    ament_export_libraries(wolf_controller)
     ament_package()
     add_definitions(-DROS2)
     message(STATUS "Add ROS2 definition")
@@ -57,21 +60,21 @@ find_package(ocs2_msgs QUIET)
 find_package(ddynamic_reconfigure QUIET)
 
 if(${rt_logger_FOUND})
-    message(STATUS "Found rt_logger, creating logger for wolf_controller_ros.")
+    message(STATUS "Found rt_logger, creating logger for wolf_controller.")
     add_definitions(-DRT_LOGGER)
 else()
     message(STATUS "rt_logger not found.")
 endif()
 
 if(${ocs2_msgs_FOUND})
-    message(STATUS "Found ocs2_msgs, creating OCS2 interface for wolf_controller_ros.")
+    message(STATUS "Found ocs2_msgs, creating OCS2 interface for wolf_controller.")
     add_definitions(-DOCS2)
 else()
     message(STATUS "ocs2_msgs not found.")
 endif()
 
 if (${ddynamic_reconfigure_FOUND})
-    message(STATUS "Found ddynamic_reconfigure, creating ddynamic reconfigure interface for wolf_controller_ros.")
+    message(STATUS "Found ddynamic_reconfigure, creating ddynamic reconfigure interface for wolf_controller.")
     add_definitions(-DDDYNAMIC_RECONFIGURE)
 else()
     message(STATUS "ddynamic_reconfigure not found.")
@@ -95,8 +98,8 @@ include_directories(
     ${ocs2_msgs_INCLUDE_DIRS}
 )
 
-add_library(wolf_controller_ros src/${ROS_VERSION}/controller_wrapper.cpp src/${ROS_VERSION}/controller_plugin.cpp)
-target_link_libraries(wolf_controller_ros
+add_library(wolf_controller SHARED src/${ROS_VERSION}/controller_wrapper.cpp src/${ROS_VERSION}/controller_plugin.cpp)
+target_link_libraries(wolf_controller
     ${tf2_LIBRARIES}
     ${controller_interface_LIBRARIES}
     ${wolf_controller_utils_LIBRARIES}
@@ -108,7 +111,10 @@ target_link_libraries(wolf_controller_ros
     ${rviz_visual_tools_LIBRARIES}
     ${rt_logger_LIBRARIES}
     ${ddynamic_reconfigure_LIBRARIES}
-    ${ocs2_msgs_LIBRARIES})
+    ${ocs2_msgs_LIBRARIES}
+    ${pluginlib_LIBRARIES})
+target_compile_definitions(wolf_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
 
 add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
 target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES} ${wolf_msgs_LIBRARIES} ${geometry_msgs_LIBRARIES})
@@ -118,12 +124,12 @@ install(
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
-install(TARGETS wolf_controller_ros plot_node
+install(TARGETS wolf_controller plot_node
     DESTINATION lib/${PROJECT_NAME}
     LIBRARY DESTINATION lib
 )
 
-install(FILES controller_plugin.xml
+install(FILES wolf_controller_plugin.xml
   DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME})
 
 install(DIRECTORY launch/
@@ -143,4 +149,5 @@ install(DIRECTORY plotjuggler/
 
 install(PROGRAMS scripts/${ROS_VERSION}/keyboard_node
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME})
+
 

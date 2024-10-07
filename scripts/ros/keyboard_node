@@ -17,9 +17,9 @@ import rospkg
 
 rospack = rospkg.RosPack()
 rospack.list()
-path_full_keyboard_buttons = rospack.get_path('wolf_controller_ros') + "/resources/keyboard_controls.png"
-path_simple_keyboard_buttons = rospack.get_path('wolf_controller_ros') + "/resources/simple_keyboard_controls.png"
-path_icon = rospack.get_path('wolf_controller_ros') + "/resources/wolf_logo.png"
+path_full_keyboard_buttons = rospack.get_path('wolf_controller') + "/resources/keyboard_controls.png"
+path_simple_keyboard_buttons = rospack.get_path('wolf_controller') + "/resources/simple_keyboard_controls.png"
+path_icon = rospack.get_path('wolf_controller') + "/resources/wolf_logo.png"
 
 msg = """
 Reading from the keyboard  and Publishing to Twist!

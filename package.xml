@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>wolf_controller_ros</name>
+  <name>wolf_controller</name>
   <version>0.0.1</version>
-  <description>WoLF: Whole-body Locomotion Framework for quadruped robots. This package contains the whole-body controller.</description>
+  <description>WoLF: Whole-body Locomotion Framework for quadruped robots. This package contains the whole-body controller plugin for ros1 and ros2.</description>
 
   <maintainer email="gennaro.raiola@gmail.com">Gennaro Raiola</maintainer>
 
@@ -23,6 +23,7 @@
   <depend>wolf_msgs</depend>
   <depend>wolf_estimation</depend>
   <depend>geometry_msgs</depend>
+  <depend>pluginlib</depend>
 
   <depend condition="$ddynamic_reconfigure_FOUND == True">ddynamic_reconfigure</depend>
   <depend condition="$rt_logger_FOUND == True">rt_logger</depend>
@@ -32,7 +33,7 @@
   <export>
     <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>
-    <controller_interface plugin="${prefix}/controller_plugin.xml"/>
+    <controller_interface plugin="${prefix}/wolf_controller_plugin.xml"/>
   </export>
 
 </package>

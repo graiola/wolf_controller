@@ -11,7 +11,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #define DEVICES_ROS_H
 
 #include <rclcpp/rclcpp.hpp>
-#include <wolf_controller_ros/devices/interface.h>
+#include <wolf_controller/devices/interface.h>
 #include <wolf_controller_core/common.h>
 #include <wolf_controller_core/controller_core.h>
 

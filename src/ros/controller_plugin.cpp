@@ -7,11 +7,11 @@
  */
 
 // WoLF
-#include <wolf_controller_ros/controller_plugin.h>
-#include <wolf_controller_ros/controller_wrapper.h>
-#include <wolf_controller_ros/devices/joy.h>
-#include <wolf_controller_ros/devices/twist.h>
-#include <wolf_controller_ros/devices/keyboard.h>
+#include <wolf_controller/controller_plugin.h>
+#include <wolf_controller/controller_wrapper.h>
+#include <wolf_controller/devices/joy.h>
+#include <wolf_controller/devices/twist.h>
+#include <wolf_controller/devices/keyboard.h>
 
 // WoLF controller utils
 #include <wolf_controller_utils/tools.h>
@@ -30,7 +30,7 @@ using namespace wolf_controller_utils;
 
 namespace wolf_controller {
 
-Controller::Controller()
+WolfController::WolfController()
   :MultiInterfaceController<hardware_interface::EffortJointInterface,
    hardware_interface::ImuSensorInterface,
    hardware_interface::GroundTruthInterface,
@@ -43,11 +43,11 @@ Controller::Controller()
 
 }
 
-Controller::~Controller()
+WolfController::~WolfController()
 {
 }
 
-bool Controller::init(hardware_interface::RobotHW* robot_hw,
+bool WolfController::init(hardware_interface::RobotHW* robot_hw,
                       ros::NodeHandle& root_nh,
                       ros::NodeHandle& controller_nh)
 {
@@ -216,12 +216,12 @@ bool Controller::init(hardware_interface::RobotHW* robot_hw,
   controller_->getIDProblem()->init(robot_name_,period_);
 
   // Spawn the odom publisher thread
-  odom_publisher_thread_= std::make_shared<std::thread>(&Controller::odomPublisher,this);
+  odom_publisher_thread_= std::make_shared<std::thread>(&WolfController::odomPublisher,this);
 
   return true;
 }
 
-void Controller::readJoints()
+void WolfController::readJoints()
 {
   for (unsigned int i = 0; i < joint_states_.size(); i++)
   {
@@ -232,7 +232,7 @@ void Controller::readJoints()
   }
 }
 
-void Controller::readImu()
+void WolfController::readImu()
 {
   //imu_accelerometer_ = Eigen::Map<const Eigen::Vector3d>(imu_sensor_.getLinearAcceleration());
   //imu_gyroscope_     = Eigen::Map<const Eigen::Vector3d>(imu_sensor_.getAngularVelocity());
@@ -247,7 +247,7 @@ void Controller::readImu()
   controller_->setImuAccelerometer(Eigen::Map<const Eigen::Vector3d>(imu_sensor_.getLinearAcceleration()));
 }
 
-void Controller::readGroundTruth()
+void WolfController::readGroundTruth()
 {
 
   tmp_quat_.w() = ground_truth_.getOrientation()[0];
@@ -262,13 +262,13 @@ void Controller::readGroundTruth()
                                     Eigen::Map<const Eigen::Vector3d>(ground_truth_.getAngularVelocity()));
 }
 
-void Controller::readContactSensors()
+void WolfController::readContactSensors()
 {
   for(const auto& tmp : contact_sensors_)
       controller_->setExtEstimatedContactState(tmp.first,tmp.second.getContactState(),Eigen::Map<const Eigen::Vector3d>(tmp.second.getForce()));
 }
 
-void Controller::starting(const ros::Time&  /*time*/)
+void WolfController::starting(const ros::Time&  /*time*/)
 {
   ROS_DEBUG_NAMED(CLASS_NAME,"Starting WoLF controller");
 
@@ -281,7 +281,7 @@ void Controller::starting(const ros::Time&  /*time*/)
   ROS_DEBUG_NAMED(CLASS_NAME,"Starting WoLF controller completed");
 }
 
-void Controller::update(const ros::Time& time, const ros::Duration& period)
+void WolfController::update(const ros::Time& time, const ros::Duration& period)
 {
   period_ = period.toSec();
 
@@ -316,7 +316,7 @@ void Controller::update(const ros::Time& time, const ros::Duration& period)
 #endif
 }
 
-void Controller::odomPublisher()
+void WolfController::odomPublisher()
 {
   ROS_DEBUG_NAMED(CLASS_NAME,"Start the odomPublisher");
 
@@ -458,7 +458,7 @@ void Controller::odomPublisher()
   ROS_DEBUG_NAMED(CLASS_NAME,"Stop the odomPublisher");
 }
 
-void Controller::stopping(const ros::Time& /*time*/)
+void WolfController::stopping(const ros::Time& /*time*/)
 {
   ROS_DEBUG_NAMED(CLASS_NAME,"Stopping WoLF controller");
 
@@ -470,4 +470,6 @@ void Controller::stopping(const ros::Time& /*time*/)
 
 } //namespace
 
-PLUGINLIB_EXPORT_CLASS(wolf_controller::Controller, controller_interface::ControllerBase);
+#include <pluginlib/class_list_macros.hpp>
+
+PLUGINLIB_EXPORT_CLASS(wolf_controller::WolfController, controller_interface::ControllerBase);

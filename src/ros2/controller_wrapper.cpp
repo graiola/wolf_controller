@@ -6,7 +6,7 @@
  */
 
 // WoLF
-#include <wolf_controller_ros/controller_wrapper.h>
+#include <wolf_controller/controller_wrapper.h>
 #include <wolf_controller_core/state_machine.h>
 
 // System
@@ -482,6 +482,7 @@ bool ControllerRosWrapper::increaseSwingFrequencyCB(const std::shared_ptr<std_sr
 {
   res->success = true;
   controller_->getGaitGenerator()->increaseSwingFrequency();
+  return res->success;
 }
 
 // Decrease Swing Frequency
@@ -490,6 +491,7 @@ bool ControllerRosWrapper::decreaseSwingFrequencyCB(const std::shared_ptr<std_sr
 {
   res->success = true;
   controller_->getGaitGenerator()->decreaseSwingFrequency();
+  return res->success;
 }
 
 // Set Swing Frequency
@@ -502,6 +504,7 @@ bool ControllerRosWrapper::setSwingFrequencyCB(const std::shared_ptr<wolf_msgs::
   } else {
     res->success = false;
   }
+  return res->success;
 }
 
 // Set Duty Factor
@@ -514,6 +517,7 @@ bool ControllerRosWrapper::setDutyFactorCB(const std::shared_ptr<wolf_msgs::srv:
   } else {
     res->success = false;
   }
+  return res->success;
 }
 
 // Activate Push Recovery
@@ -522,6 +526,7 @@ bool ControllerRosWrapper::activatePushRecoveryCB(const std::shared_ptr<std_srvs
 {
   res->success = true;
   controller_->getFootholdsPlanner()->togglePushRecovery();
+  return res->success;
 }
 
 // Activate Step Reflex
@@ -530,6 +535,7 @@ bool ControllerRosWrapper::activateStepReflexCB(const std::shared_ptr<std_srvs::
 {
   res->success = true;
   controller_->getGaitGenerator()->toggleStepReflex();
+  return res->success;
 }
 
 // Set Step Height
@@ -542,6 +548,7 @@ bool ControllerRosWrapper::setStepHeightCB(const std::shared_ptr<wolf_msgs::srv:
   } else {
     res->success = false;
   }
+  return res->success;
 }
 
 // Increase Step Height
@@ -550,6 +557,7 @@ bool ControllerRosWrapper::increaseStepHeightCB(const std::shared_ptr<std_srvs::
 {
   res->success = true;
   controller_->getFootholdsPlanner()->increaseStepHeight();
+  return res->success;
 }
 
 // Decrease Step Height
@@ -558,6 +566,7 @@ bool ControllerRosWrapper::decreaseStepHeightCB(const std::shared_ptr<std_srvs::
 {
   res->success = true;
   controller_->getFootholdsPlanner()->decreaseStepHeight();
+  return res->success;
 }
 
 // Switch Control Mode
@@ -566,6 +575,7 @@ bool ControllerRosWrapper::switchControlModeCB(const std::shared_ptr<std_srvs::s
 {
   res->success = true;
   controller_->switchControlMode();
+  return res->success;
 }
 
 // Switch Gait
@@ -574,6 +584,7 @@ bool ControllerRosWrapper::switchGaitCB(const std::shared_ptr<std_srvs::srv::Tri
 {
   res->success = true;
   controller_->switchGait();
+  return res->success;
 }
 
 // Switch Posture
@@ -582,6 +593,7 @@ bool ControllerRosWrapper::switchPostureCB(const std::shared_ptr<std_srvs::srv::
 {
   res->success = true;
   controller_->switchPosture();
+  return res->success;
 }
 
 // Emergency Stop
@@ -590,6 +602,7 @@ bool ControllerRosWrapper::emergencyStopCB(const std::shared_ptr<std_srvs::srv::
 {
   res->success = true;
   controller_->emergencyStop();
+  return res->success;
 }
 
 // Reset Base
@@ -610,6 +623,7 @@ bool ControllerRosWrapper::resetBaseCB(const std::shared_ptr<std_srvs::srv::Trig
     current_state = controller_->getStateMachine()->getCurrentState();
     std::this_thread::sleep_for(std::chrono::milliseconds(THREADS_SLEEP_TIME_ms));
   }
+  return res->success;
 }
 
 // Stand Up
@@ -628,6 +642,7 @@ bool ControllerRosWrapper::standUpCB(const std::shared_ptr<std_srvs::srv::Trigge
     current_state = controller_->getStateMachine()->getCurrentState();
     std::this_thread::sleep_for(std::chrono::milliseconds(THREADS_SLEEP_TIME_ms));
   }
+  return res->success;
 }
 
 // Stand Down
@@ -646,6 +661,7 @@ bool ControllerRosWrapper::standDownCB(const std::shared_ptr<std_srvs::srv::Trig
     current_state = controller_->getStateMachine()->getCurrentState();
     std::this_thread::sleep_for(std::chrono::milliseconds(THREADS_SLEEP_TIME_ms));
   }
+  return res->success;
 }
 
 void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Duration& period)
