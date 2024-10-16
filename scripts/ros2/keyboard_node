@@ -28,8 +28,8 @@ Moving around:
   a   s   d
 
 Orientation:
-   u    
-h  j  k  
+   u
+h  j  k
 
 o : up (+z)
 l : down (-z)
@@ -68,13 +68,18 @@ class TriggerService:
         req = Trigger.Request()
         # Call the service asynchronously
         future = self.__service.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future)  # Pass the correct node
-        if future.result() is not None:
-            self.called = True
-            return future.result()  # Return the result of the service call
-        else:
-            self.node.get_logger().error('Service call failed.')
-            return None
+        self.called = True
+
+        # Wait for the service to complete
+        #rclpy.spin_until_future_complete(self.node, future, timeout_sec=1.0)
+        #
+        #if future.done() and future.result() is not None:
+        #    self.node.get_logger().info(f"Service call to {self.__service.srv_name} succeeded.")
+        #    self.called = True
+        #    return future.result()  # Return the result of the service call
+        #else:
+        #    self.node.get_logger().error(f"Service call to {self.__service.srv_name} failed.")
+        #    return None
 
     def reset(self):
         self.called = False
@@ -99,14 +104,9 @@ class WolfKeyboardController(Node):
         super().__init__('wolf_keyboard_node')
         pygame.init()
 
-        white = (255, 255, 255)
         X = 710
         Y = 440
         self.display_surface = pygame.display.set_mode((X, Y))
-
-        #self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
-        #if self.robot_name == '' or self.robot_name == '/':
-        #    self.robot_name = 'wolf_keyboard'
 
         self.robot_name = 'wolf_keyboard'
 
@@ -206,4 +206,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-
