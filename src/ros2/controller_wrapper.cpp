@@ -29,69 +29,95 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
 
   // Defaults
   double default_duty_factor = 0.3;
-  controller_node->get_parameter("default_duty_factor", default_duty_factor);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_duty_factor given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_duty_factor);
+  if (!controller_node->get_parameter("default_duty_factor", default_duty_factor))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_duty_factor given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_duty_factor);
+  }
 
   double default_swing_frequency = 3.0; // [Hz]
-  controller_node->get_parameter("default_swing_frequency", default_swing_frequency);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_swing_frequency given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_swing_frequency);
+  if (!controller_node->get_parameter("default_swing_frequency", default_swing_frequency))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_swing_frequency given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_swing_frequency);
+  }
 
   double default_contact_threshold = 50.0; // [N]
-  controller_node->get_parameter("default_contact_threshold", default_contact_threshold);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_contact_threshold given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_contact_threshold);
+  if (!controller_node->get_parameter("default_contact_threshold", default_contact_threshold))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_contact_threshold given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_contact_threshold);
+  }
 
   double default_step_height = 0.05; // [m]
-  controller_node->get_parameter("default_step_height", default_step_height);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_step_height given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_step_height);
+  if (!controller_node->get_parameter("default_step_height", default_step_height))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_step_height given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_step_height);
+  }
 
   double max_step_height = 0.15; // [m]
-  controller_node->get_parameter("max_step_height", max_step_height);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No max_step_height given in namespace %s, using a max value of %f.",
-               controller_node->get_namespace(), max_step_height);
+  if (!controller_node->get_parameter("max_step_height", max_step_height))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No max_step_height given in namespace %s, using a max value of %f.",
+                 controller_node->get_namespace(), max_step_height);
+  }
 
   double max_step_length = 0.5; // [m]
-  controller_node->get_parameter("max_step_length", max_step_length);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No max_step_length given in namespace %s, using a max value of %f.",
-               controller_node->get_namespace(), max_step_length);
+  if (!controller_node->get_parameter("max_step_length", max_step_length))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No max_step_length given in namespace %s, using a max value of %f.",
+                 controller_node->get_namespace(), max_step_length);
+  }
 
   double default_step_reflex_contact_threshold = default_contact_threshold / 3.0; // [N]
-  controller_node->get_parameter("default_step_reflex_contact_threshold", default_step_reflex_contact_threshold);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_step_reflex_contact_threshold given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_step_reflex_contact_threshold);
+  if (!controller_node->get_parameter("default_step_reflex_contact_threshold", default_step_reflex_contact_threshold))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_step_reflex_contact_threshold given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_step_reflex_contact_threshold);
+  }
 
   double default_step_reflex_max_retraction = max_step_height / 2.0; // [m]
-  controller_node->get_parameter("default_step_reflex_max_retraction", default_step_reflex_max_retraction);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_step_reflex_max_retraction given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_step_reflex_max_retraction);
+  if (!controller_node->get_parameter("default_step_reflex_max_retraction", default_step_reflex_max_retraction))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_step_reflex_max_retraction given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_step_reflex_max_retraction);
+  }
 
   double max_base_height = 0.5; // [m]
-  controller_node->get_parameter("max_base_height", max_base_height);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No max_base_height given in namespace %s, using a max value of %f.",
-               controller_node->get_namespace(), max_base_height);
+  if (!controller_node->get_parameter("max_base_height", max_base_height))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No max_base_height given in namespace %s, using a max value of %f.",
+                 controller_node->get_namespace(), max_base_height);
+  }
 
   double max_base_roll = 2 * M_PI; // [rad]
-  controller_node->get_parameter("max_base_roll", max_base_roll);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No max_base_roll given in namespace %s, using a max value of %f.",
-               controller_node->get_namespace(), max_base_roll);
+  if (!controller_node->get_parameter("max_base_roll", max_base_roll))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No max_base_roll given in namespace %s, using a max value of %f.",
+                 controller_node->get_namespace(), max_base_roll);
+  }
 
   double max_base_pitch = 2 * M_PI; // [rad]
-  controller_node->get_parameter("max_base_pitch", max_base_pitch);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No max_base_pitch given in namespace %s, using a max value of %f.",
-               controller_node->get_namespace(), max_base_pitch);
+  if (!controller_node->get_parameter("max_base_pitch", max_base_pitch))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No max_base_pitch given in namespace %s, using a max value of %f.",
+                 controller_node->get_namespace(), max_base_pitch);
+  }
 
   double min_base_roll = -2 * M_PI; // [rad]
-  controller_node->get_parameter("min_base_roll", min_base_roll);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No min_base_roll given in namespace %s, using a min value of %f.",
-               controller_node->get_namespace(), min_base_roll);
+  if (!controller_node->get_parameter("min_base_roll", min_base_roll))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No min_base_roll given in namespace %s, using a min value of %f.",
+                 controller_node->get_namespace(), min_base_roll);
+  }
 
   double min_base_pitch = -2 * M_PI; // [rad]
-  controller_node->get_parameter("min_base_pitch", min_base_pitch);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No min_base_pitch given in namespace %s, using a min value of %f.",
-               controller_node->get_namespace(), min_base_pitch);
+  if (!controller_node->get_parameter("min_base_pitch", min_base_pitch))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No min_base_pitch given in namespace %s, using a min value of %f.",
+                 controller_node->get_namespace(), min_base_pitch);
+  }
 
   double default_base_linear_velocity, default_base_linear_velocity_x, default_base_linear_velocity_y, default_base_linear_velocity_z;
   default_base_linear_velocity = default_base_linear_velocity_x = default_base_linear_velocity_y = default_base_linear_velocity_z = 0.5; // [m/s]
@@ -99,12 +125,12 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
   if (controller_node->get_parameter("default_base_linear_velocity", default_base_linear_velocity)) {
     default_base_linear_velocity_x = default_base_linear_velocity_y = default_base_linear_velocity_z = default_base_linear_velocity;
   } else {
-    RCLCPP_DEBUG(controller_node->get_logger(), "No default_base_linear_velocity given in namespace %s, looking for default_base_linear_velocity_[x,y,z].",
+    RCLCPP_WARN(controller_node->get_logger(), "No default_base_linear_velocity given in namespace %s, looking for default_base_linear_velocity_[x,y,z].",
                  controller_node->get_namespace());
     controller_node->get_parameter("default_base_linear_velocity_x", default_base_linear_velocity_x);
     controller_node->get_parameter("default_base_linear_velocity_y", default_base_linear_velocity_y);
     controller_node->get_parameter("default_base_linear_velocity_z", default_base_linear_velocity_z);
-    RCLCPP_DEBUG(controller_node->get_logger(), "No default_base_linear_velocity_[x,y,z] given in namespace %s, using a default value of %f.",
+    RCLCPP_WARN(controller_node->get_logger(), "No default_base_linear_velocity_[x,y,z] given in namespace %s, using a default value of %f.",
                  controller_node->get_namespace(), default_base_linear_velocity);
   }
 
@@ -114,39 +140,49 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
   if (controller_node->get_parameter("default_base_angular_velocity", default_base_angular_velocity)) {
     default_base_angular_velocity_roll = default_base_angular_velocity_pitch = default_base_angular_velocity_yaw = default_base_angular_velocity;
   } else {
-    RCLCPP_DEBUG(controller_node->get_logger(), "No default_base_angular_velocity given in namespace %s, looking for default_base_angular_velocity_[roll,pitch,yaw].",
+    RCLCPP_WARN(controller_node->get_logger(), "No default_base_angular_velocity given in namespace %s, looking for default_base_angular_velocity_[roll,pitch,yaw].",
                  controller_node->get_namespace());
     controller_node->get_parameter("default_base_angular_velocity_roll", default_base_angular_velocity_roll);
     controller_node->get_parameter("default_base_angular_velocity_pitch", default_base_angular_velocity_pitch);
     controller_node->get_parameter("default_base_angular_velocity_yaw", default_base_angular_velocity_yaw);
-    RCLCPP_DEBUG(controller_node->get_logger(), "No default_base_angular_velocity_[roll,pitch,yaw] given in namespace %s, using a default value of %f.",
+    RCLCPP_WARN(controller_node->get_logger(), "No default_base_angular_velocity_[roll,pitch,yaw] given in namespace %s, using a default value of %f.",
                  controller_node->get_namespace(), default_base_angular_velocity);
   }
 
   double default_friction_cones_mu = 0.7;
-  controller_node->get_parameter("default_friction_cones_mu", default_friction_cones_mu);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_friction_cones_mu given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_friction_cones_mu);
+  if (!controller_node->get_parameter("default_friction_cones_mu", default_friction_cones_mu))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_friction_cones_mu given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_friction_cones_mu);
+  }
 
   double default_cutoff_freq_gyroscope = 300.0; // [Hz]
-  controller_node->get_parameter("default_cutoff_freq_gyroscope", default_cutoff_freq_gyroscope);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_cutoff_freq_gyroscope given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_cutoff_freq_gyroscope);
+  if (!controller_node->get_parameter("default_cutoff_freq_gyroscope", default_cutoff_freq_gyroscope))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_cutoff_freq_gyroscope given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_cutoff_freq_gyroscope);
+  }
 
   double default_cutoff_freq_accelerometer = 300.0; // [Hz]
-  controller_node->get_parameter("default_cutoff_freq_accelerometer", default_cutoff_freq_accelerometer);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_cutoff_freq_accelerometer given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_cutoff_freq_accelerometer);
+  if (!controller_node->get_parameter("default_cutoff_freq_accelerometer", default_cutoff_freq_accelerometer))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_cutoff_freq_accelerometer given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_cutoff_freq_accelerometer);
+  }
 
   double default_cutoff_freq_qdot = 300.0; // [Hz]
-  controller_node->get_parameter("default_cutoff_freq_qdot", default_cutoff_freq_qdot);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_cutoff_freq_qdot given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_cutoff_freq_qdot);
+  if (!controller_node->get_parameter("default_cutoff_freq_qdot", default_cutoff_freq_qdot))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_cutoff_freq_qdot given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_cutoff_freq_qdot);
+  }
 
   double default_push_recovery_sensibility = 0.0; // [0.0,1.0]
-  controller_node->get_parameter("default_push_recovery_sensibility", default_push_recovery_sensibility);
-  RCLCPP_DEBUG(controller_node->get_logger(), "No default_push_recovery_sensibility given in namespace %s, using a default value of %f.",
-               controller_node->get_namespace(), default_push_recovery_sensibility);
+  if (!controller_node->get_parameter("default_push_recovery_sensibility", default_push_recovery_sensibility))
+  {
+    RCLCPP_WARN(controller_node->get_logger(), "No default_push_recovery_sensibility given in namespace %s, using a default value of %f.",
+                 controller_node->get_namespace(), default_push_recovery_sensibility);
+  }
 
   bool activate_com_z = true;
   controller_node->get_parameter("activate_com_z", activate_com_z);
@@ -178,7 +214,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
 
   std::string estimation_position_type;
   if (!controller_node->get_parameter("estimation_position_type", estimation_position_type)) {
-    RCLCPP_DEBUG(controller_node->get_logger(), "No estimation_position_type given in namespace %s, using %s",
+    RCLCPP_WARN(controller_node->get_logger(), "No estimation_position_type given in namespace %s, using %s",
                  controller_node->get_namespace(), controller_->getStateEstimator()->getPositionEstimationType().c_str());
   } else {
     controller_->getStateEstimator()->setPositionEstimationType(estimation_position_type);
@@ -186,7 +222,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
 
   std::string estimation_orientation_type;
   if (!controller_node->get_parameter("estimation_orientation_type", estimation_orientation_type)) {
-    RCLCPP_DEBUG(controller_node->get_logger(), "No estimation_orientation_type given in namespace %s, using %s",
+    RCLCPP_WARN(controller_node->get_logger(), "No estimation_orientation_type given in namespace %s, using %s",
                  controller_node->get_namespace(), controller_->getStateEstimator()->getOrientationEstimationType().c_str());
   } else {
     controller_->getStateEstimator()->setOrientationEstimationType(estimation_orientation_type);
@@ -244,19 +280,19 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
   Kp_leg = Kd_leg = Eigen::Vector3d::Ones();
   for (unsigned int i = 0; i < wolf_controller::_joints_prefix.size(); i++) {
     double Kp_leg_i, Kd_leg_i;
-    if (!controller_node->get_parameter("gains/Kp_leg/" + wolf_controller_utils::_joints_prefix[i], Kp_leg_i)) {
-      RCLCPP_DEBUG(controller_node->get_logger(), "No default Kp_leg_%s gain given in the namespace: %s using 1.0 gain.",
+    if (!controller_node->get_parameter("gains.Kp_leg." + wolf_controller_utils::_joints_prefix[i], Kp_leg_i)) {
+      RCLCPP_WARN(controller_node->get_logger(), "No default Kp_leg_%s gain given in the namespace: %s using 1.0 gain.",
                    wolf_controller::_joints_prefix[i].c_str(), controller_node->get_namespace());
       Kp_leg_i = 1.0;
     }
-    if (!controller_node->get_parameter("gains/Kd_leg/" + wolf_controller_utils::_joints_prefix[i], Kd_leg_i)) {
-      RCLCPP_DEBUG(controller_node->get_logger(), "No default Kd_leg_%s gain given in the namespace: %s using 1.0 gain.",
+    if (!controller_node->get_parameter("gains.Kd_leg." + wolf_controller_utils::_joints_prefix[i], Kd_leg_i)) {
+      RCLCPP_WARN(controller_node->get_logger(), "No default Kd_leg_%s gain given in the namespace: %s using 1.0 gain.",
                    wolf_controller::_joints_prefix[i].c_str(), controller_node->get_namespace());
       Kd_leg_i = 1.0;
     }
     // Check if the values are positive
     if (Kp_leg_i < 0.0 || Kd_leg_i < 0.0) {
-      RCLCPP_DEBUG(controller_node->get_logger(), "Kp_leg and Kd_leg gains must be positive!");
+      RCLCPP_WARN(controller_node->get_logger(), "Kp_leg and Kd_leg gains must be positive!");
       Kp_leg_i = Kd_leg_i = 1.0;
     }
     Kp_leg(i) = Kp_leg_i;
@@ -273,19 +309,19 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
       Kd_arm.setOnes();
       for (unsigned int i = 0; i < n_joint_arms; i++) {
         double Kp_arm_i, Kd_arm_i;
-        if (!controller_node->get_parameter("gains/Kp_arm/j" + std::to_string(i), Kp_arm_i)) {
-          RCLCPP_DEBUG(controller_node->get_logger(), "No default Kp_arm_j%s gain given in the namespace: %s using 1.0 gain.",
+        if (!controller_node->get_parameter("gains.Kp_arm.j" + std::to_string(i), Kp_arm_i)) {
+          RCLCPP_WARN(controller_node->get_logger(), "No default Kp_arm_j%s gain given in the namespace: %s using 1.0 gain.",
                        std::to_string(i).c_str(), controller_node->get_namespace());
           Kp_arm_i = 1.0;
         }
-        if (!controller_node->get_parameter("gains/Kd_arm/j" + std::to_string(i), Kd_arm_i)) {
-          RCLCPP_DEBUG(controller_node->get_logger(), "No default Kd_arm_j%s gain given in the namespace: %s using 1.0 gain.",
+        if (!controller_node->get_parameter("gains.Kd_arm.j" + std::to_string(i), Kd_arm_i)) {
+          RCLCPP_WARN(controller_node->get_logger(), "No default Kd_arm_j%s gain given in the namespace: %s using 1.0 gain.",
                        std::to_string(i).c_str(), controller_node->get_namespace());
           Kd_arm_i = 1.0;
         }
         // Check if the values are positive
         if (Kp_arm_i < 0.0 || Kd_arm_i < 0.0) {
-          RCLCPP_DEBUG(controller_node->get_logger(), "Kp_arm and Kd_arm gains must be positive!");
+          RCLCPP_WARN(controller_node->get_logger(), "Kp_arm and Kd_arm gains must be positive!");
           Kp_arm_i = Kd_arm_i = 1.0;
         }
         Kp_arm(i) = Kp_arm_i;
