@@ -85,62 +85,70 @@ private:
   struct JointHandle
   {
     // References to state interfaces (position, velocity, effort)
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> position_state;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> velocity_state;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> effort_state;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> position_state_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> velocity_state_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> effort_state_;
 
     // Reference to command interface (effort command)
-    std::reference_wrapper<hardware_interface::LoanedCommandInterface> effort_command;
+    std::reference_wrapper<hardware_interface::LoanedCommandInterface> effort_command_;
+
+    std::string name_;
 
     // Constructor to initialize the struct
     JointHandle(
         const hardware_interface::LoanedStateInterface &position,
         const hardware_interface::LoanedStateInterface &velocity,
         const hardware_interface::LoanedStateInterface &effort_state,
-        hardware_interface::LoanedCommandInterface &effort_command)
-        : position_state(position),
-          velocity_state(velocity),
-          effort_state(effort_state),
-          effort_command(effort_command)
+        hardware_interface::LoanedCommandInterface &effort_command,
+        const std::string& name)
+        : position_state_(position),
+          velocity_state_(velocity),
+          effort_state_(effort_state),
+          effort_command_(effort_command),
+          name_(name)
     {}
   };
 
   struct IMUHandle
   {
     // References to IMU state interfaces (orientation, angular velocity, linear acceleration)
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_x;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_y;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_z;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_w;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> angular_velocity_x;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> angular_velocity_y;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> angular_velocity_z;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> linear_acceleration_x;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> linear_acceleration_y;
-    std::reference_wrapper<const hardware_interface::LoanedStateInterface> linear_acceleration_z;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_x_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_y_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_z_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> orientation_w_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> angular_velocity_x_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> angular_velocity_y_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> angular_velocity_z_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> linear_acceleration_x_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> linear_acceleration_y_;
+    std::reference_wrapper<const hardware_interface::LoanedStateInterface> linear_acceleration_z_;
+
+    std::string name_;
 
     // Constructor to initialize the struct
     IMUHandle(
-      const hardware_interface::LoanedStateInterface &orientation_x_,
-      const hardware_interface::LoanedStateInterface &orientation_y_,
-      const hardware_interface::LoanedStateInterface &orientation_z_,
-      const hardware_interface::LoanedStateInterface &orientation_w_,
-      const hardware_interface::LoanedStateInterface &angular_velocity_x_,
-      const hardware_interface::LoanedStateInterface &angular_velocity_y_,
-      const hardware_interface::LoanedStateInterface &angular_velocity_z_,
-      const hardware_interface::LoanedStateInterface &linear_acceleration_x_,
-      const hardware_interface::LoanedStateInterface &linear_acceleration_y_,
-      const hardware_interface::LoanedStateInterface &linear_acceleration_z_)
-      : orientation_x(orientation_x_),
-        orientation_y(orientation_y_),
-        orientation_z(orientation_z_),
-        orientation_w(orientation_w_),
-        angular_velocity_x(angular_velocity_x_),
-        angular_velocity_y(angular_velocity_y_),
-        angular_velocity_z(angular_velocity_z_),
-        linear_acceleration_x(linear_acceleration_x_),
-        linear_acceleration_y(linear_acceleration_y_),
-        linear_acceleration_z(linear_acceleration_z_)
+      const hardware_interface::LoanedStateInterface &orientation_x,
+      const hardware_interface::LoanedStateInterface &orientation_y,
+      const hardware_interface::LoanedStateInterface &orientation_z,
+      const hardware_interface::LoanedStateInterface &orientation_w,
+      const hardware_interface::LoanedStateInterface &angular_velocity_x,
+      const hardware_interface::LoanedStateInterface &angular_velocity_y,
+      const hardware_interface::LoanedStateInterface &angular_velocity_z,
+      const hardware_interface::LoanedStateInterface &linear_acceleration_x,
+      const hardware_interface::LoanedStateInterface &linear_acceleration_y,
+      const hardware_interface::LoanedStateInterface &linear_acceleration_z,
+      const std::string& name)
+      : orientation_x_(orientation_x),
+        orientation_y_(orientation_y),
+        orientation_z_(orientation_z),
+        orientation_w_(orientation_w),
+        angular_velocity_x_(angular_velocity_x),
+        angular_velocity_y_(angular_velocity_y),
+        angular_velocity_z_(angular_velocity_z),
+        linear_acceleration_x_(linear_acceleration_x),
+        linear_acceleration_y_(linear_acceleration_y),
+        linear_acceleration_z_(linear_acceleration_z),
+        name_(name)
     {}
   };
 

@@ -352,6 +352,8 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
 
   for (const auto &joint_name : controller_->getJointNames())
   {
+    RCLCPP_INFO(get_node()->get_logger(), "Activate joint %s" , joint_name.c_str());
+
     // Find position interface
     const auto position_handle = std::find_if(
           state_interfaces_.cbegin(), state_interfaces_.cend(), [&joint_name](const auto &interface) {
@@ -405,12 +407,13 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     }
 
     // Emplace joint handles with position, velocity, and effort state, and effort command interfaces
-    joint_handles_.emplace_back(
+    joint_handles_.push_back(
           JointHandle{
             std::ref(*position_handle),  // Position
             std::ref(*velocity_handle),  // Velocity
             std::ref(*effort_state_handle), // Effort (State)
-            std::ref(*effort_command_handle) // Effort (Command)
+            std::ref(*effort_command_handle), // Effort (Command)
+            joint_name
           });
   }
 
@@ -479,7 +482,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
   imu_handle_ = std::make_unique<IMUHandle>(
         std::ref(*orientation_x), std::ref(*orientation_y), std::ref(*orientation_z), std::ref(*orientation_w),
         std::ref(*angular_velocity_x), std::ref(*angular_velocity_y), std::ref(*angular_velocity_z),
-        std::ref(*linear_acceleration_x), std::ref(*linear_acceleration_y), std::ref(*linear_acceleration_z));
+        std::ref(*linear_acceleration_x), std::ref(*linear_acceleration_y), std::ref(*linear_acceleration_z), imu_name);
 
   return CallbackReturn::SUCCESS;
 }
@@ -488,27 +491,27 @@ void WolfController::readJoints()
 {
   for (unsigned int i = 0; i < joint_handles_.size(); i++)
   {
-    controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_handles_[i].position_state.get().get_value());
-    controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_handles_[i].velocity_state.get().get_value());
+    controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_handles_[i].position_state_.get().get_value());
+    controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_handles_[i].velocity_state_.get().get_value());
     controller_->setJointAcceleration(i+FLOATING_BASE_DOFS,0.0); // FIXME
-    controller_->setJointEffort(i+FLOATING_BASE_DOFS,joint_handles_[i].effort_state.get().get_value());
+    controller_->setJointEffort(i+FLOATING_BASE_DOFS,joint_handles_[i].effort_state_.get().get_value());
   }
 }
 
 void WolfController::readImu()
 {
-  tmp_quat_.w() = imu_handle_->orientation_w.get().get_value();
-  tmp_quat_.x() = imu_handle_->orientation_x.get().get_value();
-  tmp_quat_.y() = imu_handle_->orientation_y.get().get_value();
-  tmp_quat_.z() = imu_handle_->orientation_z.get().get_value();
+  tmp_quat_.w() = imu_handle_->orientation_w_.get().get_value();
+  tmp_quat_.x() = imu_handle_->orientation_x_.get().get_value();
+  tmp_quat_.y() = imu_handle_->orientation_y_.get().get_value();
+  tmp_quat_.z() = imu_handle_->orientation_z_.get().get_value();
 
-  tmp_gyro_.x() = imu_handle_->angular_velocity_x.get().get_value();
-  tmp_gyro_.y() = imu_handle_->angular_velocity_y.get().get_value();
-  tmp_gyro_.z() = imu_handle_->angular_velocity_z.get().get_value();
+  tmp_gyro_.x() = imu_handle_->angular_velocity_x_.get().get_value();
+  tmp_gyro_.y() = imu_handle_->angular_velocity_y_.get().get_value();
+  tmp_gyro_.z() = imu_handle_->angular_velocity_z_.get().get_value();
 
-  tmp_acc_.x() = imu_handle_->linear_acceleration_x.get().get_value();
-  tmp_acc_.y() = imu_handle_->linear_acceleration_y.get().get_value();
-  tmp_acc_.z() = imu_handle_->linear_acceleration_z.get().get_value();
+  tmp_acc_.x() = imu_handle_->linear_acceleration_x_.get().get_value();
+  tmp_acc_.y() = imu_handle_->linear_acceleration_y_.get().get_value();
+  tmp_acc_.z() = imu_handle_->linear_acceleration_z_.get().get_value();
 
   controller_->setImuOrientation(tmp_quat_);
   controller_->setImuGyroscope(tmp_gyro_);
@@ -554,7 +557,7 @@ controller_interface::return_type WolfController::update()
 
   // Write to the hardware interface
   for (unsigned int i = 0; i < joint_handles_.size(); i++)
-    joint_handles_[i].effort_command.get().set_value(controller_->getDesiredJointEfforts()(i+FLOATING_BASE_DOFS));
+    joint_handles_[i].effort_command_.get().set_value(controller_->getDesiredJointEfforts()(i+FLOATING_BASE_DOFS));
 
   // Publish
   ros_wrapper_->publish(time,period);
