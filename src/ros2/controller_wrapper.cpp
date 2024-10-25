@@ -32,91 +32,91 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
   if (!controller_node->get_parameter("default_duty_factor", default_duty_factor))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_duty_factor given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_duty_factor);
+                controller_node->get_namespace(), default_duty_factor);
   }
 
   double default_swing_frequency = 3.0; // [Hz]
   if (!controller_node->get_parameter("default_swing_frequency", default_swing_frequency))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_swing_frequency given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_swing_frequency);
+                controller_node->get_namespace(), default_swing_frequency);
   }
 
   double default_contact_threshold = 50.0; // [N]
   if (!controller_node->get_parameter("default_contact_threshold", default_contact_threshold))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_contact_threshold given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_contact_threshold);
+                controller_node->get_namespace(), default_contact_threshold);
   }
 
   double default_step_height = 0.05; // [m]
   if (!controller_node->get_parameter("default_step_height", default_step_height))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_step_height given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_step_height);
+                controller_node->get_namespace(), default_step_height);
   }
 
   double max_step_height = 0.15; // [m]
   if (!controller_node->get_parameter("max_step_height", max_step_height))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No max_step_height given in namespace %s, using a max value of %f.",
-                 controller_node->get_namespace(), max_step_height);
+                controller_node->get_namespace(), max_step_height);
   }
 
   double max_step_length = 0.5; // [m]
   if (!controller_node->get_parameter("max_step_length", max_step_length))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No max_step_length given in namespace %s, using a max value of %f.",
-                 controller_node->get_namespace(), max_step_length);
+                controller_node->get_namespace(), max_step_length);
   }
 
   double default_step_reflex_contact_threshold = default_contact_threshold / 3.0; // [N]
   if (!controller_node->get_parameter("default_step_reflex_contact_threshold", default_step_reflex_contact_threshold))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_step_reflex_contact_threshold given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_step_reflex_contact_threshold);
+                controller_node->get_namespace(), default_step_reflex_contact_threshold);
   }
 
   double default_step_reflex_max_retraction = max_step_height / 2.0; // [m]
   if (!controller_node->get_parameter("default_step_reflex_max_retraction", default_step_reflex_max_retraction))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_step_reflex_max_retraction given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_step_reflex_max_retraction);
+                controller_node->get_namespace(), default_step_reflex_max_retraction);
   }
 
   double max_base_height = 0.5; // [m]
   if (!controller_node->get_parameter("max_base_height", max_base_height))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No max_base_height given in namespace %s, using a max value of %f.",
-                 controller_node->get_namespace(), max_base_height);
+                controller_node->get_namespace(), max_base_height);
   }
 
   double max_base_roll = 2 * M_PI; // [rad]
   if (!controller_node->get_parameter("max_base_roll", max_base_roll))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No max_base_roll given in namespace %s, using a max value of %f.",
-                 controller_node->get_namespace(), max_base_roll);
+                controller_node->get_namespace(), max_base_roll);
   }
 
   double max_base_pitch = 2 * M_PI; // [rad]
   if (!controller_node->get_parameter("max_base_pitch", max_base_pitch))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No max_base_pitch given in namespace %s, using a max value of %f.",
-                 controller_node->get_namespace(), max_base_pitch);
+                controller_node->get_namespace(), max_base_pitch);
   }
 
   double min_base_roll = -2 * M_PI; // [rad]
   if (!controller_node->get_parameter("min_base_roll", min_base_roll))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No min_base_roll given in namespace %s, using a min value of %f.",
-                 controller_node->get_namespace(), min_base_roll);
+                controller_node->get_namespace(), min_base_roll);
   }
 
   double min_base_pitch = -2 * M_PI; // [rad]
   if (!controller_node->get_parameter("min_base_pitch", min_base_pitch))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No min_base_pitch given in namespace %s, using a min value of %f.",
-                 controller_node->get_namespace(), min_base_pitch);
+                controller_node->get_namespace(), min_base_pitch);
   }
 
   double default_base_linear_velocity, default_base_linear_velocity_x, default_base_linear_velocity_y, default_base_linear_velocity_z;
@@ -126,12 +126,12 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
     default_base_linear_velocity_x = default_base_linear_velocity_y = default_base_linear_velocity_z = default_base_linear_velocity;
   } else {
     RCLCPP_WARN(controller_node->get_logger(), "No default_base_linear_velocity given in namespace %s, looking for default_base_linear_velocity_[x,y,z].",
-                 controller_node->get_namespace());
+                controller_node->get_namespace());
     controller_node->get_parameter("default_base_linear_velocity_x", default_base_linear_velocity_x);
     controller_node->get_parameter("default_base_linear_velocity_y", default_base_linear_velocity_y);
     controller_node->get_parameter("default_base_linear_velocity_z", default_base_linear_velocity_z);
     RCLCPP_WARN(controller_node->get_logger(), "No default_base_linear_velocity_[x,y,z] given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_base_linear_velocity);
+                controller_node->get_namespace(), default_base_linear_velocity);
   }
 
   double default_base_angular_velocity, default_base_angular_velocity_roll, default_base_angular_velocity_pitch, default_base_angular_velocity_yaw;
@@ -141,47 +141,47 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
     default_base_angular_velocity_roll = default_base_angular_velocity_pitch = default_base_angular_velocity_yaw = default_base_angular_velocity;
   } else {
     RCLCPP_WARN(controller_node->get_logger(), "No default_base_angular_velocity given in namespace %s, looking for default_base_angular_velocity_[roll,pitch,yaw].",
-                 controller_node->get_namespace());
+                controller_node->get_namespace());
     controller_node->get_parameter("default_base_angular_velocity_roll", default_base_angular_velocity_roll);
     controller_node->get_parameter("default_base_angular_velocity_pitch", default_base_angular_velocity_pitch);
     controller_node->get_parameter("default_base_angular_velocity_yaw", default_base_angular_velocity_yaw);
     RCLCPP_WARN(controller_node->get_logger(), "No default_base_angular_velocity_[roll,pitch,yaw] given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_base_angular_velocity);
+                controller_node->get_namespace(), default_base_angular_velocity);
   }
 
   double default_friction_cones_mu = 0.7;
   if (!controller_node->get_parameter("default_friction_cones_mu", default_friction_cones_mu))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_friction_cones_mu given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_friction_cones_mu);
+                controller_node->get_namespace(), default_friction_cones_mu);
   }
 
   double default_cutoff_freq_gyroscope = 300.0; // [Hz]
   if (!controller_node->get_parameter("default_cutoff_freq_gyroscope", default_cutoff_freq_gyroscope))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_cutoff_freq_gyroscope given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_cutoff_freq_gyroscope);
+                controller_node->get_namespace(), default_cutoff_freq_gyroscope);
   }
 
   double default_cutoff_freq_accelerometer = 300.0; // [Hz]
   if (!controller_node->get_parameter("default_cutoff_freq_accelerometer", default_cutoff_freq_accelerometer))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_cutoff_freq_accelerometer given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_cutoff_freq_accelerometer);
+                controller_node->get_namespace(), default_cutoff_freq_accelerometer);
   }
 
   double default_cutoff_freq_qdot = 300.0; // [Hz]
   if (!controller_node->get_parameter("default_cutoff_freq_qdot", default_cutoff_freq_qdot))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_cutoff_freq_qdot given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_cutoff_freq_qdot);
+                controller_node->get_namespace(), default_cutoff_freq_qdot);
   }
 
   double default_push_recovery_sensibility = 0.0; // [0.0,1.0]
   if (!controller_node->get_parameter("default_push_recovery_sensibility", default_push_recovery_sensibility))
   {
     RCLCPP_WARN(controller_node->get_logger(), "No default_push_recovery_sensibility given in namespace %s, using a default value of %f.",
-                 controller_node->get_namespace(), default_push_recovery_sensibility);
+                controller_node->get_namespace(), default_push_recovery_sensibility);
   }
 
   bool activate_com_z = true;
@@ -215,7 +215,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
   std::string estimation_position_type;
   if (!controller_node->get_parameter("estimation_position_type", estimation_position_type)) {
     RCLCPP_WARN(controller_node->get_logger(), "No estimation_position_type given in namespace %s, using %s",
-                 controller_node->get_namespace(), controller_->getStateEstimator()->getPositionEstimationType().c_str());
+                controller_node->get_namespace(), controller_->getStateEstimator()->getPositionEstimationType().c_str());
   } else {
     controller_->getStateEstimator()->setPositionEstimationType(estimation_position_type);
   }
@@ -223,7 +223,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
   std::string estimation_orientation_type;
   if (!controller_node->get_parameter("estimation_orientation_type", estimation_orientation_type)) {
     RCLCPP_WARN(controller_node->get_logger(), "No estimation_orientation_type given in namespace %s, using %s",
-                 controller_node->get_namespace(), controller_->getStateEstimator()->getOrientationEstimationType().c_str());
+                controller_node->get_namespace(), controller_->getStateEstimator()->getOrientationEstimationType().c_str());
   } else {
     controller_->getStateEstimator()->setOrientationEstimationType(estimation_orientation_type);
   }
@@ -282,12 +282,12 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
     double Kp_leg_i, Kd_leg_i;
     if (!controller_node->get_parameter("gains.Kp_leg." + wolf_controller_utils::_joints_prefix[i], Kp_leg_i)) {
       RCLCPP_WARN(controller_node->get_logger(), "No default Kp_leg_%s gain given in the namespace: %s using 1.0 gain.",
-                   wolf_controller::_joints_prefix[i].c_str(), controller_node->get_namespace());
+                  wolf_controller::_joints_prefix[i].c_str(), controller_node->get_namespace());
       Kp_leg_i = 1.0;
     }
     if (!controller_node->get_parameter("gains.Kd_leg." + wolf_controller_utils::_joints_prefix[i], Kd_leg_i)) {
       RCLCPP_WARN(controller_node->get_logger(), "No default Kd_leg_%s gain given in the namespace: %s using 1.0 gain.",
-                   wolf_controller::_joints_prefix[i].c_str(), controller_node->get_namespace());
+                  wolf_controller::_joints_prefix[i].c_str(), controller_node->get_namespace());
       Kd_leg_i = 1.0;
     }
     // Check if the values are positive
@@ -311,12 +311,12 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
         double Kp_arm_i, Kd_arm_i;
         if (!controller_node->get_parameter("gains.Kp_arm.j" + std::to_string(i), Kp_arm_i)) {
           RCLCPP_WARN(controller_node->get_logger(), "No default Kp_arm_j%s gain given in the namespace: %s using 1.0 gain.",
-                       std::to_string(i).c_str(), controller_node->get_namespace());
+                      std::to_string(i).c_str(), controller_node->get_namespace());
           Kp_arm_i = 1.0;
         }
         if (!controller_node->get_parameter("gains.Kd_arm.j" + std::to_string(i), Kd_arm_i)) {
           RCLCPP_WARN(controller_node->get_logger(), "No default Kd_arm_j%s gain given in the namespace: %s using 1.0 gain.",
-                       std::to_string(i).c_str(), controller_node->get_namespace());
+                      std::to_string(i).c_str(), controller_node->get_namespace());
           Kd_arm_i = 1.0;
         }
         // Check if the values are positive
@@ -334,51 +334,52 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
   // Real-time publishers
   // Contact forces
   unsigned int n_contacts = controller_->getRobotModel()->getContactNames().size();
-  auto contact_forces_pub_ = controller_node->create_publisher<wolf_msgs::msg::ContactForces>("contact_forces", rclcpp::QoS(4));
-  auto contact_forces_msg = std::make_shared<wolf_msgs::msg::ContactForces>();
-  contact_forces_msg->header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
-  contact_forces_msg->name.resize(n_contacts);
-  contact_forces_msg->contact.resize(n_contacts);
-  contact_forces_msg->des_contact.resize(n_contacts);
-  contact_forces_msg->contact_positions.resize(n_contacts);
-  contact_forces_msg->contact_forces.resize(n_contacts);
-  contact_forces_msg->des_contact_forces.resize(n_contacts);
+  auto contact_forces_pub = controller_node->create_publisher<wolf_msgs::msg::ContactForces>("contact_forces", rclcpp::QoS(4));
+  contact_forces_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::ContactForces>>(contact_forces_pub);
+  contact_forces_pub_->msg_.header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
+  contact_forces_pub_->msg_.name.resize(n_contacts);
+  contact_forces_pub_->msg_.contact.resize(n_contacts);
+  contact_forces_pub_->msg_.des_contact.resize(n_contacts);
+  contact_forces_pub_->msg_.contact_positions.resize(n_contacts);
+  contact_forces_pub_->msg_.contact_forces.resize(n_contacts);
+  contact_forces_pub_->msg_.des_contact_forces.resize(n_contacts);
 
   // Foot holds
   unsigned int n_feet = controller_->getRobotModel()->getNumberLegs();
-  auto foot_holds_pub_ = controller_node->create_publisher<wolf_msgs::msg::FootHolds>("foot_holds", rclcpp::QoS(4));
-  auto foot_holds_msg = std::make_shared<wolf_msgs::msg::FootHolds>();
-  foot_holds_msg->header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
-  foot_holds_msg->name.resize(n_feet);
-  foot_holds_msg->desired_foothold.resize(n_feet);
-  foot_holds_msg->virtual_foothold.resize(n_feet);
+  auto foot_holds_pub = controller_node->create_publisher<wolf_msgs::msg::FootHolds>("foot_holds", rclcpp::QoS(4));
+  foot_holds_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::FootHolds>>(foot_holds_pub);
+  foot_holds_pub_->msg_.header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
+  foot_holds_pub_->msg_.name.resize(n_feet);
+  foot_holds_pub_->msg_.desired_foothold.resize(n_feet);
+  foot_holds_pub_->msg_.virtual_foothold.resize(n_feet);
 
   // Terrain estimation
-  auto terrain_estimation_pub_ = controller_node->create_publisher<wolf_msgs::msg::TerrainEstimation>("terrain_estimation", rclcpp::QoS(4));
-  auto terrain_estimation_msg = std::make_shared<wolf_msgs::msg::TerrainEstimation>();
-  terrain_estimation_msg->header.frame_id = WORLD_FRAME_NAME;
+  auto terrain_estimation_pub = controller_node->create_publisher<wolf_msgs::msg::TerrainEstimation>("terrain_estimation", rclcpp::QoS(4));
+  terrain_estimation_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::TerrainEstimation>>(terrain_estimation_pub);
+  terrain_estimation_pub_->msg_.header.frame_id = WORLD_FRAME_NAME;
 
   // Friction cones
-  auto friction_cones_pub_ = controller_node->create_publisher<wolf_msgs::msg::FrictionCones>("friction_cones", rclcpp::QoS(4));
-  auto friction_cones_msg = std::make_shared<wolf_msgs::msg::FrictionCones>();
-  friction_cones_msg->header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
-  friction_cones_msg->foot_positions.resize(n_feet);
-  friction_cones_msg->cone_axis.resize(n_feet);
-  friction_cones_msg->mus.resize(n_feet);
+  auto friction_cones_pub = controller_node->create_publisher<wolf_msgs::msg::FrictionCones>("friction_cones", rclcpp::QoS(4));
+  friction_cones_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::FrictionCones>>(friction_cones_pub);
+  friction_cones_pub_->msg_.header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
+  friction_cones_pub_->msg_.foot_positions.resize(n_feet);
+  friction_cones_pub_->msg_.cone_axis.resize(n_feet);
+  friction_cones_pub_->msg_.mus.resize(n_feet);
 
   // Capture point
-  auto capture_point_pub_ = controller_node->create_publisher<wolf_msgs::msg::CapturePoint>("capture_point", rclcpp::QoS(4));
-  auto capture_point_msg = std::make_shared<wolf_msgs::msg::CapturePoint>();
-  capture_point_msg->header.frame_id = WORLD_FRAME_NAME;
-  capture_point_msg->support_polygon.points.resize(N_LEGS);
+  auto capture_point_pub = controller_node->create_publisher<wolf_msgs::msg::CapturePoint>("capture_point", rclcpp::QoS(4));
+  capture_point_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::CapturePoint>>(capture_point_pub);
+  capture_point_pub_->msg_.header.frame_id = WORLD_FRAME_NAME;
+  capture_point_pub_->msg_.support_polygon.points.resize(N_LEGS);
 
   // Controller state
-  auto controller_state_pub_ = controller_node->create_publisher<wolf_msgs::msg::ControllerState>("controller_state", rclcpp::QoS(4));
-  auto controller_state_msg = std::make_shared<wolf_msgs::msg::ControllerState>();
-  controller_state_msg->states = controller_->getStateMachine()->getStatesAsString();
-  controller_state_msg->current_state = controller_->getStateMachine()->getStateAsString();
-  controller_state_msg->modes = controller_->getModesAsString();
-  controller_state_msg->current_mode = controller_->getModeAsString();
+  auto controller_state_pub = controller_node->create_publisher<wolf_msgs::msg::ControllerState>("controller_state", rclcpp::QoS(4));
+  controller_state_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::ControllerState>>(controller_state_pub);
+  controller_state_pub_->msg_.states = controller_->getStateMachine()->getStatesAsString();
+  controller_state_pub_->msg_.current_state = controller_->getStateMachine()->getStateAsString();
+  controller_state_pub_->msg_.modes = controller_->getModesAsString();
+  controller_state_pub_->msg_.current_mode = controller_->getModeAsString();
+
 
 #ifdef OCS2
   // OCS2 MPC observation
@@ -514,7 +515,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_no
 
 // Increase Swing Frequency
 bool ControllerRosWrapper::increaseSwingFrequencyCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                              std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                                    std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->getGaitGenerator()->increaseSwingFrequency();
@@ -523,7 +524,7 @@ bool ControllerRosWrapper::increaseSwingFrequencyCB(const std::shared_ptr<std_sr
 
 // Decrease Swing Frequency
 bool ControllerRosWrapper::decreaseSwingFrequencyCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                              std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                                    std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->getGaitGenerator()->decreaseSwingFrequency();
@@ -532,7 +533,7 @@ bool ControllerRosWrapper::decreaseSwingFrequencyCB(const std::shared_ptr<std_sr
 
 // Set Swing Frequency
 bool ControllerRosWrapper::setSwingFrequencyCB(const std::shared_ptr<wolf_msgs::srv::Float32::Request> req,
-                         std::shared_ptr<wolf_msgs::srv::Float32::Response> res)
+                                               std::shared_ptr<wolf_msgs::srv::Float32::Response> res)
 {
   if (req->data >= 0) {
     controller_->setSwingFrequency(req->data);
@@ -545,7 +546,7 @@ bool ControllerRosWrapper::setSwingFrequencyCB(const std::shared_ptr<wolf_msgs::
 
 // Set Duty Factor
 bool ControllerRosWrapper::setDutyFactorCB(const std::shared_ptr<wolf_msgs::srv::Float32::Request> req,
-                     std::shared_ptr<wolf_msgs::srv::Float32::Response> res)
+                                           std::shared_ptr<wolf_msgs::srv::Float32::Response> res)
 {
   if (req->data >= 0) {
     controller_->setDutyFactor(req->data);
@@ -558,7 +559,7 @@ bool ControllerRosWrapper::setDutyFactorCB(const std::shared_ptr<wolf_msgs::srv:
 
 // Activate Push Recovery
 bool ControllerRosWrapper::activatePushRecoveryCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                            std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                                  std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->getFootholdsPlanner()->togglePushRecovery();
@@ -567,7 +568,7 @@ bool ControllerRosWrapper::activatePushRecoveryCB(const std::shared_ptr<std_srvs
 
 // Activate Step Reflex
 bool ControllerRosWrapper::activateStepReflexCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                          std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                                std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->getGaitGenerator()->toggleStepReflex();
@@ -576,7 +577,7 @@ bool ControllerRosWrapper::activateStepReflexCB(const std::shared_ptr<std_srvs::
 
 // Set Step Height
 bool ControllerRosWrapper::setStepHeightCB(const std::shared_ptr<wolf_msgs::srv::Float32::Request> req,
-                     std::shared_ptr<wolf_msgs::srv::Float32::Response> res)
+                                           std::shared_ptr<wolf_msgs::srv::Float32::Response> res)
 {
   if (req->data >= 0) {
     controller_->getFootholdsPlanner()->setStepHeight(req->data);
@@ -589,7 +590,7 @@ bool ControllerRosWrapper::setStepHeightCB(const std::shared_ptr<wolf_msgs::srv:
 
 // Increase Step Height
 bool ControllerRosWrapper::increaseStepHeightCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                          std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                                std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->getFootholdsPlanner()->increaseStepHeight();
@@ -598,7 +599,7 @@ bool ControllerRosWrapper::increaseStepHeightCB(const std::shared_ptr<std_srvs::
 
 // Decrease Step Height
 bool ControllerRosWrapper::decreaseStepHeightCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                          std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                                std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->getFootholdsPlanner()->decreaseStepHeight();
@@ -607,7 +608,7 @@ bool ControllerRosWrapper::decreaseStepHeightCB(const std::shared_ptr<std_srvs::
 
 // Switch Control Mode
 bool ControllerRosWrapper::switchControlModeCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                         std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                               std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->switchControlMode();
@@ -616,7 +617,7 @@ bool ControllerRosWrapper::switchControlModeCB(const std::shared_ptr<std_srvs::s
 
 // Switch Gait
 bool ControllerRosWrapper::switchGaitCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                  std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                        std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->switchGait();
@@ -625,7 +626,7 @@ bool ControllerRosWrapper::switchGaitCB(const std::shared_ptr<std_srvs::srv::Tri
 
 // Switch Posture
 bool ControllerRosWrapper::switchPostureCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                     std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                           std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->switchPosture();
@@ -634,7 +635,7 @@ bool ControllerRosWrapper::switchPostureCB(const std::shared_ptr<std_srvs::srv::
 
 // Emergency Stop
 bool ControllerRosWrapper::emergencyStopCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                     std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                           std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->emergencyStop();
@@ -643,7 +644,7 @@ bool ControllerRosWrapper::emergencyStopCB(const std::shared_ptr<std_srvs::srv::
 
 // Reset Base
 bool ControllerRosWrapper::resetBaseCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                 std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                       std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->resetBase();
@@ -664,7 +665,7 @@ bool ControllerRosWrapper::resetBaseCB(const std::shared_ptr<std_srvs::srv::Trig
 
 // Stand Up
 bool ControllerRosWrapper::standUpCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-               std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                     std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->selectPosture("UP");
@@ -683,7 +684,7 @@ bool ControllerRosWrapper::standUpCB(const std::shared_ptr<std_srvs::srv::Trigge
 
 // Stand Down
 bool ControllerRosWrapper::standDownCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
-                 std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+                                       std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   res->success = true;
   controller_->selectPosture("DOWN");
@@ -705,125 +706,117 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
 
   if(controller_->getIDProblem())
     controller_->getIDProblem()->publish();
-/*
-  // Controller state publishing
-  if(controller_state_pub_)
+
+
+  if(controller_state_pub_.get() && controller_state_pub_->trylock())
   {
-    auto msg = std::make_unique<wolf_msgs::msg::ControllerState>();
-    msg->current_state = controller_->getStateMachine()->getStateAsString();
-    msg->current_mode = controller_->getModeAsString();
-    msg->header.stamp = time;
-    controller_state_pub_->publish(std::move(msg));
+    controller_state_pub_->msg_.current_state = controller_->getStateMachine()->getStateAsString();
+    controller_state_pub_->msg_.current_mode  = controller_->getModeAsString();
+    controller_state_pub_->msg_.header.stamp  = time;
+    controller_state_pub_->unlockAndPublish();
   }
 
-  // Footholds publishing
   const std::vector<std::string>& foot_names = controller_->getRobotModel()->getFootNames();
-  std::string current_foot_name;
-
-  if(foot_holds_pub_)
+  std::string current_foot_names;
+  if(foot_holds_pub_.get() && foot_holds_pub_->trylock())
   {
-    auto msg = std::make_unique<wolf_msgs::msg::FootholdArray>();
-    for(unsigned int i = 0; i < foot_names.size(); i++)
+    for(unsigned int i=0; i <foot_names.size(); i++)
     {
-      current_foot_name = foot_names[i];
-      msg->name[i] = current_foot_name;
-      msg->desired_foothold[i].x = controller_->getFootholdsPlanner()->getDesiredFoothold(foot_names[i]).x();
-      msg->desired_foothold[i].y = controller_->getFootholdsPlanner()->getDesiredFoothold(foot_names[i]).y();
-      msg->desired_foothold[i].z = controller_->getFootholdsPlanner()->getDesiredFoothold(foot_names[i]).z();
-      msg->virtual_foothold[i].x = controller_->getFootholdsPlanner()->getVirtualFoothold(foot_names[i]).x();
-      msg->virtual_foothold[i].y = controller_->getFootholdsPlanner()->getVirtualFoothold(foot_names[i]).y();
-      msg->virtual_foothold[i].z = controller_->getFootholdsPlanner()->getVirtualFoothold(foot_names[i]).z();
+      current_foot_names = foot_names[i];
+      foot_holds_pub_->msg_.name[i] = current_foot_names;
+      foot_holds_pub_->msg_.desired_foothold[i].x = controller_->getFootholdsPlanner()->getDesiredFoothold(foot_names[i]).x();
+      foot_holds_pub_->msg_.desired_foothold[i].y = controller_->getFootholdsPlanner()->getDesiredFoothold(foot_names[i]).y();
+      foot_holds_pub_->msg_.desired_foothold[i].z = controller_->getFootholdsPlanner()->getDesiredFoothold(foot_names[i]).z();
+      foot_holds_pub_->msg_.virtual_foothold[i].x = controller_->getFootholdsPlanner()->getVirtualFoothold(foot_names[i]).x();
+      foot_holds_pub_->msg_.virtual_foothold[i].y = controller_->getFootholdsPlanner()->getVirtualFoothold(foot_names[i]).y();
+      foot_holds_pub_->msg_.virtual_foothold[i].z = controller_->getFootholdsPlanner()->getVirtualFoothold(foot_names[i]).z();
     }
-    msg->header.stamp = time;
-    foot_holds_pub_->publish(std::move(msg));
+    foot_holds_pub_->msg_.header.stamp = time;
+    foot_holds_pub_->unlockAndPublish();
   }
 
-  // Contact forces publishing
+  // Note: des_contact is defined only for the feet at the moment (imagine des_contact as the planned contact state, which
+  // for the feet is given by the state machine). For this reason we are using only the feet at the moment
+  //const std::vector<std::string>& contact_names = controller_->getRobotModel()->getContactNames();
+  //std::string current_contact_name;
   const std::vector<std::string>& contact_names = controller_->getRobotModel()->getContactNames();
   std::string current_contact_name;
-
-  if(contact_forces_pub_)
+  if(contact_forces_pub_.get() && contact_forces_pub_->trylock())
   {
-    auto msg = std::make_unique<wolf_msgs::msg::ContactForceArray>();
-    for(unsigned int i = 0; i < contact_names.size(); i++)
+    for(unsigned int i=0; i <contact_names.size(); i++)
     {
       current_contact_name = contact_names[i];
-      msg->name[i] = current_contact_name;
-      msg->contact[i] = controller_->getStateEstimator()->getContacts().at(current_contact_name);
-      msg->des_contact[i] = controller_->getDesiredContactStates()[i];
-      msg->contact_positions[i].x = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(0);
-      msg->contact_positions[i].y = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(1);
-      msg->contact_positions[i].z = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(2);
+      contact_forces_pub_->msg_.name[i] = current_contact_name;
+      contact_forces_pub_->msg_.contact[i] = controller_->getStateEstimator()->getContacts().at(current_contact_name);
+      contact_forces_pub_->msg_.des_contact[i] = controller_->getDesiredContactStates()[i];
+      contact_forces_pub_->msg_.contact_positions[i].x = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(0);
+      contact_forces_pub_->msg_.contact_positions[i].y = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(1);
+      contact_forces_pub_->msg_.contact_positions[i].z = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(2);
 
-      msg->contact_forces[i].force.x = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(0);
-      msg->contact_forces[i].force.y = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(1);
-      msg->contact_forces[i].force.z = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(2);
+      contact_forces_pub_->msg_.contact_forces[i].force.x = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(0);
+      contact_forces_pub_->msg_.contact_forces[i].force.y = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(1);
+      contact_forces_pub_->msg_.contact_forces[i].force.z = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(2);
 
-      msg->des_contact_forces[i].force.x = controller_->getDesiredContactForces()[i](0);
-      msg->des_contact_forces[i].force.y = controller_->getDesiredContactForces()[i](1);
-      msg->des_contact_forces[i].force.z = controller_->getDesiredContactForces()[i](2);
+      contact_forces_pub_->msg_.des_contact_forces[i].force.x = controller_->getDesiredContactForces()[i](0);
+      contact_forces_pub_->msg_.des_contact_forces[i].force.y = controller_->getDesiredContactForces()[i](1);
+      contact_forces_pub_->msg_.des_contact_forces[i].force.z = controller_->getDesiredContactForces()[i](2);
     }
-    msg->header.stamp = time;
-    contact_forces_pub_->publish(std::move(msg));
+    contact_forces_pub_->msg_.header.stamp = time;
+    contact_forces_pub_->unlockAndPublish();
   }
 
-  // Terrain estimation publishing
-  if(terrain_estimation_pub_)
+  if(terrain_estimation_pub_.get() && terrain_estimation_pub_->trylock())
   {
-    auto msg = std::make_unique<wolf_msgs::msg::TerrainEstimation>();
-    msg->central_point.x = controller_->getTerrainEstimator()->getTerrainPositionWorld().x();
-    msg->central_point.y = controller_->getTerrainEstimator()->getTerrainPositionWorld().y();
-    msg->central_point.z = controller_->getTerrainEstimator()->getTerrainPositionWorld().z();
-
-    msg->terrain_normal.x = controller_->getTerrainEstimator()->getTerrainNormal().x();
-    msg->terrain_normal.y = controller_->getTerrainEstimator()->getTerrainNormal().y();
-    msg->terrain_normal.z = controller_->getTerrainEstimator()->getTerrainNormal().z();
-
-    msg->header.stamp = time;
-    terrain_estimation_pub_->publish(std::move(msg));
-  }
-
-  // Friction cones publishing
-  if(friction_cones_pub_)
-  {
-    auto msg = std::make_unique<wolf_msgs::msg::FrictionConeArray>();
-    for(unsigned int i = 0; i < foot_names.size(); i++)
+    for(unsigned int i=0; i <foot_names.size(); i++)
     {
-      msg->foot_positions[i].x = controller_->getRobotModel()->getFeetPositionInBase().at(foot_names[i]).x();
-      msg->foot_positions[i].y = controller_->getRobotModel()->getFeetPositionInBase().at(foot_names[i]).y();
-      msg->foot_positions[i].z = controller_->getRobotModel()->getFeetPositionInBase().at(foot_names[i]).z();
+      terrain_estimation_pub_->msg_.central_point.x = controller_->getTerrainEstimator()->getTerrainPositionWorld().x();
+      terrain_estimation_pub_->msg_.central_point.y = controller_->getTerrainEstimator()->getTerrainPositionWorld().y();
+      terrain_estimation_pub_->msg_.central_point.z = controller_->getTerrainEstimator()->getTerrainPositionWorld().z();
 
-      msg->cone_axis[i].x = controller_->getTerrainEstimator()->getTerrainNormal().x();
-      msg->cone_axis[i].y = controller_->getTerrainEstimator()->getTerrainNormal().y();
-      msg->cone_axis[i].z = controller_->getTerrainEstimator()->getTerrainNormal().z();
-
-      msg->mus[i].data = (controller_->getIDProblem() ? controller_->getIDProblem()->getFrictionConesMu() : 1.0);
+      terrain_estimation_pub_->msg_.terrain_normal.x = controller_->getTerrainEstimator()->getTerrainNormal().x();
+      terrain_estimation_pub_->msg_.terrain_normal.y = controller_->getTerrainEstimator()->getTerrainNormal().y();
+      terrain_estimation_pub_->msg_.terrain_normal.z = controller_->getTerrainEstimator()->getTerrainNormal().z();
     }
-    msg->header.stamp = time;
-    friction_cones_pub_->publish(std::move(msg));
+    terrain_estimation_pub_->msg_.header.stamp = time;
+    terrain_estimation_pub_->unlockAndPublish();
   }
 
-  // Capture point publishing
-  if(capture_point_pub_)
+  if(friction_cones_pub_.get() && friction_cones_pub_->trylock())
   {
-    auto msg = std::make_unique<wolf_msgs::msg::CapturePoint>();
+    for(unsigned int i=0; i <foot_names.size(); i++)
+    {
+      friction_cones_pub_->msg_.foot_positions[i].x = controller_->getRobotModel()->getFeetPositionInBase().at(foot_names[i]).x();
+      friction_cones_pub_->msg_.foot_positions[i].y = controller_->getRobotModel()->getFeetPositionInBase().at(foot_names[i]).y();
+      friction_cones_pub_->msg_.foot_positions[i].z = controller_->getRobotModel()->getFeetPositionInBase().at(foot_names[i]).z();
+
+      friction_cones_pub_->msg_.cone_axis[i].x = controller_->getTerrainEstimator()->getTerrainNormal().x();
+      friction_cones_pub_->msg_.cone_axis[i].y = controller_->getTerrainEstimator()->getTerrainNormal().y();
+      friction_cones_pub_->msg_.cone_axis[i].z = controller_->getTerrainEstimator()->getTerrainNormal().z();
+
+      friction_cones_pub_->msg_.mus[i].data = (controller_->getIDProblem() ? controller_->getIDProblem()->getFrictionConesMu() : 1.0);
+    }
+    friction_cones_pub_->msg_.header.stamp = time;
+    friction_cones_pub_->unlockAndPublish();
+  }
+
+  if(capture_point_pub_.get() && capture_point_pub_->trylock())
+  {
     const std::vector<std::string>& ordered_foot_names = controller_->getFootholdsPlanner()->getPushRecovery()->getOrderedFootNames();
 
-    for(unsigned int i = 0; i < N_LEGS; i++)
+    for(unsigned int i=0; i <N_LEGS; i++)
     {
-      msg->support_polygon.points[i].x = controller_->getFootholdsPlanner()->getPushRecovery()->getSupportPolygonEdges()[i].x();
-      msg->support_polygon.points[i].y = controller_->getFootholdsPlanner()->getPushRecovery()->getSupportPolygonEdges()[i].y();
-      msg->support_polygon.points[i].z = controller_->getRobotModel()->getFootPositionInWorld(ordered_foot_names[i]).z();
+      capture_point_pub_->msg_.support_polygon.points[i].x = controller_->getFootholdsPlanner()->getPushRecovery()->getSupportPolygonEdges()[i].x();
+      capture_point_pub_->msg_.support_polygon.points[i].y = controller_->getFootholdsPlanner()->getPushRecovery()->getSupportPolygonEdges()[i].y();
+      capture_point_pub_->msg_.support_polygon.points[i].z = controller_->getRobotModel()->getFootPositionInWorld(ordered_foot_names[i]).z();
     }
-    msg->com.x = controller_->getFootholdsPlanner()->getPushRecovery()->getComPositionXY().x();
-    msg->com.y = controller_->getFootholdsPlanner()->getPushRecovery()->getComPositionXY().y();
-    msg->com.z = controller_->getTerrainEstimator()->getTerrainPositionWorld().z();
-    msg->capture_point.x = controller_->getFootholdsPlanner()->getPushRecovery()->getCapturePoint().x();
-    msg->capture_point.y = controller_->getFootholdsPlanner()->getPushRecovery()->getCapturePoint().y();
-    msg->capture_point.z = controller_->getTerrainEstimator()->getTerrainPositionWorld().z();
-
-    msg->header.stamp = time;
-    capture_point_pub_->publish(std::move(msg));
+    capture_point_pub_->msg_.com.x = controller_->getFootholdsPlanner()->getPushRecovery()->getComPositionXY().x();
+    capture_point_pub_->msg_.com.y = controller_->getFootholdsPlanner()->getPushRecovery()->getComPositionXY().y();
+    capture_point_pub_->msg_.com.z = controller_->getTerrainEstimator()->getTerrainPositionWorld().z();
+    capture_point_pub_->msg_.capture_point.x = controller_->getFootholdsPlanner()->getPushRecovery()->getCapturePoint().x();
+    capture_point_pub_->msg_.capture_point.y = controller_->getFootholdsPlanner()->getPushRecovery()->getCapturePoint().y();
+    capture_point_pub_->msg_.capture_point.z = controller_->getTerrainEstimator()->getTerrainPositionWorld().z();
+    capture_point_pub_->msg_.header.stamp = time;
+    capture_point_pub_->unlockAndPublish();
   }
 
 #ifdef OCS2
@@ -864,7 +857,7 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
     mpc_observation_pub_->publish(std::move(msg));
   }
 #endif
-*/
+
 }
 
 
