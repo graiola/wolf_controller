@@ -106,4 +106,19 @@
          </node>
     </group>
 
+    <!-- GUI nodes -->
+    <!-- plot_node -->
+    <group if="$(eval ' \'$(var plot_node_gui)\' ')">
+        <node name="wolf_plot_node" pkg="wolf_controller" exec="plot_node" output="screen"/>
+    </group>
+    <!-- rviz -->
+    <group if="$(eval ' \'$(var rviz_gui)\' ')">
+        <node name="wolf_rviz" pkg="rviz2" exec="rviz2"
+              args="-d $(find-pkg-share wolf_controller)/rviz/controller.rviz2.rviz"/>
+    </group>
+    <!-- rqt_reconfigure -->
+    <group if="$(eval ' \'$(var rqt_gui)\' ')">
+        <node name="wolf_gui" pkg="rqt_reconfigure" exec="rqt_reconfigure"/>
+    </group>
+
 </launch>
