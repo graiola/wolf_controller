@@ -225,7 +225,8 @@ WolfController::WolfController()
 
 WolfController::~WolfController()
 {
-
+  stopping_ = true;
+  odom_publisher_thread_->join();
 }
 
 controller_interface::return_type WolfController::init(const string &controller_name)
