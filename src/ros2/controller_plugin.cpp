@@ -56,72 +56,70 @@ WolfController::~WolfController()
 controller_interface::return_type WolfController::init(const string &controller_name)
 {
   // initialize lifecycle node
-  auto ret = ControllerInterface::init(controller_name);
+  rclcpp::NodeOptions node_options;
+  node_options.start_parameter_services(true);
+  node_options.allow_undeclared_parameters(true);
+  node_options.automatically_declare_parameters_from_overrides(true);
+  auto ret = ControllerInterface::init(controller_name,node_options);
+  //auto ret = ControllerInterface::init(controller_name);
   if (ret != controller_interface::return_type::OK)
   {
     return ret;
   }
 
-  prev_time_ = get_node()->get_clock()->now();
-
-  std::string urdf, srdf;
-  std::string input_device = "keyboard";
-  bool use_contact_sensors = false;
-
   try
   {
     // with the lifecycle node being initialized, we can declare parameters
-    auto_declare<double>("period", period_);
-    auto_declare<std::string>("robot_name", robot_name_);
-    auto_declare<std::string>("tf_prefix", tf_prefix_);
-    //auto_declare<std::string>("/robot_description/description", urdf);
-    //auto_declare<std::string>("/robot_description_semantic/description", srdf);
-    auto_declare<std::string>("imu_sensor_name", imu_name_);
-    auto_declare<std::string>("input_device", input_device);
-    auto_declare<bool>("use_contact_sensors", use_contact_sensors);
-    auto_declare<bool>("publish_odom_tf", publish_odom_tf_);
-    auto_declare<bool>("publish_odom_msg", publish_odom_msg_);
+    auto_declare<double>("period",            0.001);
+    auto_declare<std::string>("robot_name",      "");
+    auto_declare<std::string>("tf_prefix",       "");
+    auto_declare<std::string>("imu_sensor_name", "");
+    auto_declare<std::string>("input_device",    "");
+    auto_declare<bool>("use_contact_sensors", false);
+    auto_declare<bool>("publish_odom_tf",     false);
+    auto_declare<bool>("publish_odom_msg",    false);
+
+    // Gains parameters
+    // Leg proportional gains (Kp_leg)
+    auto_declare<double>("gains.Kp_leg.haa",       NAN);
+    auto_declare<double>("gains.Kp_leg.hfe",       NAN);
+    auto_declare<double>("gains.Kp_leg.kfe",       NAN);
+
+    // Leg derivative gains (Kd_leg)
+    auto_declare<double>("gains.Kd_leg.haa",       NAN);
+    auto_declare<double>("gains.Kd_leg.hfe",       NAN);
+    auto_declare<double>("gains.Kd_leg.kfe",       NAN);
+
+    std::vector<std::string> cartesian_tasks = {"lf_foot", "rf_foot", "lh_foot", "rh_foot", "waist"};
+
+    for(unsigned int j = 0; j < cartesian_tasks.size(); j++)
+      for (unsigned int i = 0; i < wolf_controller_utils::_cartesian_names.size(); i++)
+      {
+        auto_declare<double>("gains."+cartesian_tasks[j]+".Kp."+wolf_controller_utils::_cartesian_names[i], NAN);
+        auto_declare<double>("gains."+cartesian_tasks[j]+".Kd."+wolf_controller_utils::_cartesian_names[i], NAN);
+        auto_declare<double>("gains."+cartesian_tasks[j]+".weight",  NAN);
+        //auto_declare<double>("gains."+cartesian_tasks[j]+".lambda1", NAN);
+        //auto_declare<double>("gains."+cartesian_tasks[j]+".lambda2", NAN);
+      }
+
+    // Gains for the center of mass (CoM)
+    auto_declare<double>("gains.CoM.Kp.x",         NAN);
+    auto_declare<double>("gains.CoM.Kp.y",         NAN);
+    auto_declare<double>("gains.CoM.Kp.z",         NAN);
+    auto_declare<double>("gains.CoM.Kd.x",         NAN);
+    auto_declare<double>("gains.CoM.Kd.y",         NAN);
+    auto_declare<double>("gains.CoM.Kd.z",         NAN);
+    auto_declare<double>("gains.CoM.weight",       NAN);
+
+    // Gains for angular momentum
+    auto_declare<double>("gains.angular_momentum.weight", 0.0);
+
   }
   catch (const std::exception & e)
   {
     fprintf(stderr, "Exception thrown during init stage with message: %s \n", e.what());
     return controller_interface::return_type::ERROR;
   }
-
-  // configure
-  period_             = get_node()->get_parameter("period").as_double();
-  robot_name_         = get_node()->get_parameter("robot_name").as_string();
-  tf_prefix_          = get_node()->get_parameter("tf_prefix").as_string();
-  urdf                = get_string_parameter_from_remote_node(get_node(), "robot_description/description");
-  srdf                = get_string_parameter_from_remote_node(get_node(), "robot_description_semantic/description");
-  imu_name_           = get_node()->get_parameter("imu_sensor_name").as_string();
-  input_device        = get_node()->get_parameter("input_device").as_string();
-  use_contact_sensors = get_node()->get_parameter("use_contact_sensors").as_bool();
-  publish_odom_tf_    = get_node()->get_parameter("publish_odom_tf").as_bool();
-  publish_odom_msg_   = get_node()->get_parameter("publish_odom_msg").as_bool();
-
-  // Create the controller core
-  controller_ = std::make_shared<ControllerCore>();
-  controller_->init(period_,urdf,srdf,robot_name_);
-
-  if(input_device == "ps3")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<Ps3JoyHandler>(get_node(),controller_.get())); // Ps3 joy
-  else if(input_device == "xbox")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<XboxJoyHandler>(get_node(),controller_.get())); // Xbox joy
-  else if(input_device == "spacemouse")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<SpaceJoyHandler>(get_node(),controller_.get())); // Space joy
-  else if(input_device == "keyboard")
-    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<KeyboardHandler>(get_node(),controller_.get())); // Keyboard
-  devices_.addDevice(DevicesHandler::priority_t::HIGH,std::make_shared<TwistHandler>(get_node(),controller_.get(),"priority_twist")); // Twist
-  devices_.addDevice(DevicesHandler::priority_t::LOW,std::make_shared<TwistHandler>(get_node(),controller_.get(),"twist")); // Twist
-
-  ros_wrapper_ = std::make_shared<ControllerRosWrapper>(get_node(),controller_.get());
-
-  // NOTE: This has to be done after ros_wrapper creation because we are loading the params with it
-  controller_->getIDProblem()->init(robot_name_,period_);
-
-  // Spawn the odom publisher thread
-  odom_publisher_thread_= std::make_shared<std::thread>(&WolfController::odomPublisher,this);
 
   return controller_interface::return_type::OK;
 }
@@ -165,6 +163,45 @@ controller_interface::InterfaceConfiguration WolfController::state_interface_con
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfController::on_configure(const rclcpp_lifecycle::State &previous_state)
 {
+
+  prev_time_ = get_node()->get_clock()->now();
+
+  std::string urdf, srdf;
+  std::string input_device = "keyboard";
+  bool use_contact_sensors = false;
+
+  // configure
+  period_             = get_node()->get_parameter("period").as_double();
+  robot_name_         = get_node()->get_parameter("robot_name").as_string();
+  tf_prefix_          = get_node()->get_parameter("tf_prefix").as_string();
+  urdf                = get_string_parameter_from_remote_node("robot_description/description");
+  srdf                = get_string_parameter_from_remote_node("robot_description_semantic/description");
+  imu_name_           = get_node()->get_parameter("imu_sensor_name").as_string();
+  input_device        = get_node()->get_parameter("input_device").as_string();
+  use_contact_sensors = get_node()->get_parameter("use_contact_sensors").as_bool();
+  publish_odom_tf_    = get_node()->get_parameter("publish_odom_tf").as_bool();
+  publish_odom_msg_   = get_node()->get_parameter("publish_odom_msg").as_bool();
+
+  // Create the controller core
+  controller_ = std::make_shared<ControllerCore>();
+  controller_->init(period_,urdf,srdf,robot_name_);
+
+  if(input_device == "ps3")
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<Ps3JoyHandler>(get_node(),controller_.get(),"wolf_controller/joy")); // Ps3 joy
+  else if(input_device == "xbox")
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<XboxJoyHandler>(get_node(),controller_.get(),"wolf_controller/joy")); // Xbox joy
+  else if(input_device == "spacemouse")
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<SpaceJoyHandler>(get_node(),controller_.get(),"wolf_controller/joy")); // Space joy
+  else if(input_device == "keyboard")
+    devices_.addDevice(DevicesHandler::priority_t::MEDIUM,std::make_shared<KeyboardHandler>(get_node(),controller_.get(),"wolf_controller/keyboard")); // Keyboard
+  devices_.addDevice(DevicesHandler::priority_t::HIGH,std::make_shared<TwistHandler>(get_node(),controller_.get(),"wolf_controller/priority_twist")); // Twist
+  devices_.addDevice(DevicesHandler::priority_t::LOW,std::make_shared<TwistHandler>(get_node(),controller_.get(),"wolf_controller/twist")); // Twist
+
+  ros_wrapper_ = std::make_shared<ControllerRosWrapper>(get_node(),controller_.get());
+
+  // Spawn the odom publisher thread
+  odom_publisher_thread_= std::make_shared<std::thread>(&WolfController::odomPublisher,this);
+
   return CallbackReturn::SUCCESS;
 }
 
@@ -344,6 +381,11 @@ void WolfController::readImu()
 
 controller_interface::return_type WolfController::update()
 {
+
+  // NOTE: This has to be done here because the controller's lifecycle node state has to be ACTIVE in order
+  // to retrieve the ROS params in the task wrappers
+  controller_->getIDProblem()->init(robot_name_,period_);
+
   /*auto logger = node_->get_logger();
   if (get_current_state().id() == State::PRIMARY_STATE_INACTIVE)
   {
@@ -433,7 +475,7 @@ void WolfController::odomPublisher()
   auto state_estimator = controller_->getStateEstimator();
   auto robot_model = controller_->getRobotModel();
 
-  while (!stopping_)
+  while (!stopping_) //  && get_current_state().label() == "active"
   {
     rclcpp::Time t = get_node()->get_clock()->now();
 
