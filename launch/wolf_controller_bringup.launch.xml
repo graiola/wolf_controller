@@ -111,6 +111,11 @@
     <group if="$(eval ' \'$(var plot_node_gui)\' ')">
         <node name="wolf_plot_node" pkg="wolf_controller" exec="plot_node" output="screen"/>
     </group>
+    <!-- plotjuggler -->
+    <group if="$(eval ' \'$(var plotjuggler_gui)\' ')">
+    <node name="wolf_plotjuggler" pkg="plotjuggler" exec="plotjuggler"
+          args="--layout $(find-pkg-share wolf_controller)/plotjuggler/controller.ros2.xml --nosplash"/>
+    </group>
     <!-- rviz -->
     <group if="$(eval ' \'$(var rviz_gui)\' ')">
         <node name="wolf_rviz" pkg="rviz2" exec="rviz2"
