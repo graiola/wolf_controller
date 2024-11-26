@@ -3,103 +3,101 @@
  <tabbed_widget name="Main Window" parent="main_window">
   <Tab tab_name="feet" containers="1">
    <Container>
-    <DockSplitter sizes="0.332957;0.334086;0.332957" count="3" orientation="-">
-     <DockSplitter sizes="0.250986;0.249014;0.250986;0.249014" count="4" orientation="|">
+    <DockSplitter orientation="-" count="3" sizes="0.35;0.35;0.3">
+     <DockSplitter orientation="|" count="4" sizes="0.25;0.25;0.25;0.25">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="3.607117" right="5.000000" bottom="3.572625"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/lf_foot/pose_actual/position/x" color="#1f77b4"/>
-        <curve name="/wolf_controller/lf_foot/pose_reference/position/x" color="#d62728"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="2.941484" right="5.000000" bottom="2.875789"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.277832" left="4.527000" bottom="-0.278594" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/lh_foot/pose_actual/position/x" color="#1ac938"/>
         <curve name="/wolf_controller/lh_foot/pose_reference/position/x" color="#ff7f0e"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="3.532541" right="5.000000" bottom="3.475802"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.317868" left="4.527000" bottom="0.317106" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/rf_foot/pose_actual/position/x" color="#f14cc1"/>
         <curve name="/wolf_controller/rf_foot/pose_reference/position/x" color="#bcbd22"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="3.003445" right="5.000000" bottom="2.963378"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.277832" left="4.527000" bottom="-0.278594" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/rh_foot/pose_actual/position/x" color="#1ac938"/>
         <curve name="/wolf_controller/rh_foot/pose_reference/position/x" color="#9467bd"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter sizes="0.250986;0.249014;0.250986;0.249014" count="4" orientation="|">
+     <DockSplitter orientation="|" count="4" sizes="0.25;0.25;0.25;0.25">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.189599" right="5.000000" bottom="0.154235"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.273906" left="4.527000" bottom="0.163312" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/lf_foot/pose_actual/position/y" color="#1ac938"/>
         <curve name="/wolf_controller/lf_foot/pose_reference/position/y" color="#ff7f0e"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.206996" right="5.000000" bottom="0.168739"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.273906" left="4.527000" bottom="0.163312" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/lh_foot/pose_actual/position/y" color="#bcbd22"/>
         <curve name="/wolf_controller/lh_foot/pose_reference/position/y" color="#1ac938"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="-0.262876" right="5.000000" bottom="-0.349655"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.163312" left="4.527000" bottom="-0.273906" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/rf_foot/pose_actual/position/y" color="#9467bd"/>
         <curve name="/wolf_controller/rf_foot/pose_reference/position/y" color="#1f77b4"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="-0.259392" right="5.000000" bottom="-0.371802"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.163312" left="4.527000" bottom="-0.273906" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/rh_foot/pose_actual/position/y" color="#ff7f0e"/>
         <curve name="/wolf_controller/rh_foot/pose_reference/position/y" color="#17becf"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter sizes="0.250986;0.249014;0.250986;0.249014" count="4" orientation="|">
+     <DockSplitter orientation="|" count="4" sizes="0.25;0.25;0.25;0.25">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.043400" right="5.000000" bottom="0.009221"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.504468" left="4.527000" bottom="-0.672501" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/lf_foot/pose_actual/position/z" color="#f14cc1"/>
         <curve name="/wolf_controller/lf_foot/pose_reference/position/z" color="#9467bd"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.048746" right="5.000000" bottom="0.007071"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.504468" left="4.527000" bottom="-0.672501" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/lh_foot/pose_actual/position/z" color="#1f77b4"/>
         <curve name="/wolf_controller/lh_foot/pose_reference/position/z" color="#ff7f0e"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.057184" right="5.000000" bottom="0.006120"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.504468" left="4.527000" bottom="-0.672501" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/rf_foot/pose_actual/position/z" color="#17becf"/>
         <curve name="/wolf_controller/rf_foot/pose_reference/position/z" color="#d62728"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.057780" right="5.000000" bottom="0.004735"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.504468" left="4.527000" bottom="-0.672501" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/rh_foot/pose_actual/position/z" color="#f14cc1"/>
         <curve name="/wolf_controller/rh_foot/pose_reference/position/z" color="#bcbd22"/>
@@ -111,26 +109,26 @@
   </Tab>
   <Tab tab_name="waistXYZ" containers="1">
    <Container>
-    <DockSplitter sizes="0.332957;0.334086;0.332957" count="3" orientation="-">
+    <DockSplitter orientation="-" count="3" sizes="0.332991;0.334018;0.332991">
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="3.280256" right="5.000000" bottom="3.245063"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
        <limitY/>
        <curve name="/wolf_controller/waist/pose_actual/position/x" color="#1f77b4"/>
        <curve name="/wolf_controller/waist/pose_reference/position/x" color="#ff7f0e"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="0.015910" right="5.000000" bottom="-0.104287"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
        <limitY/>
        <curve name="/wolf_controller/waist/pose_actual/position/y" color="#d62728"/>
        <curve name="/wolf_controller/waist/pose_reference/position/y" color="#f14cc1"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="0.531757" right="5.000000" bottom="0.524815"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
        <limitY/>
        <curve name="/wolf_controller/waist/pose_actual/position/z" color="#1ac938"/>
        <curve name="/wolf_controller/waist/pose_reference/position/z" color="#9467bd"/>
@@ -141,26 +139,26 @@
   </Tab>
   <Tab tab_name="baseRPY" containers="1">
    <Container>
-    <DockSplitter sizes="0.332957;0.334086;0.332957" count="3" orientation="-">
+    <DockSplitter orientation="-" count="3" sizes="0.332991;0.334018;0.332991">
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="0.008591" right="5.000000" bottom="-0.036539"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
        <limitY/>
        <curve name="/wolf_controller/waist/rpy_actual/x" color="#1f77b4"/>
        <curve name="/wolf_controller/waist/rpy_reference/x" color="#ff7f0e"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="0.029309" right="5.000000" bottom="-0.030212"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
        <limitY/>
        <curve name="/wolf_controller/waist/rpy_actual/y" color="#d62728"/>
        <curve name="/wolf_controller/waist/rpy_reference/y" color="#f14cc1"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="0.027554" right="5.000000" bottom="0.007452"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
        <limitY/>
        <curve name="/wolf_controller/waist/rpy_actual/z" color="#1ac938"/>
        <curve name="/wolf_controller/waist/rpy_reference/z" color="#9467bd"/>
@@ -171,13 +169,13 @@
   </Tab>
   <Tab tab_name="baseZ" containers="1">
    <Container>
-    <DockSplitter sizes="1" count="1" orientation="-">
+    <DockSplitter orientation="-" count="1" sizes="1">
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="0.531757" right="5.000000" bottom="0.524815"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.087125" left="4.527000" bottom="-0.002125" right="9.527000"/>
        <limitY/>
-       <curve name="/wolf_controller/des_base_height/array.0/array/data.0" color="#17becf"/>
-       <curve name="/wolf_controller/base_height/array.0/array/data.0" color="#bcbd22"/>
+       <curve name="/wolf_controller/base_height/array[0]/array/data[0]" color="#1f77b4"/>
+       <curve name="/wolf_controller/des_base_height/array[0]/array/data[0]" color="#d62728"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -185,53 +183,53 @@
   </Tab>
   <Tab tab_name="com" containers="1">
    <Container>
-    <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
-     <DockSplitter sizes="0.337492;0.338148;0.32436" count="3" orientation="|">
+    <DockSplitter orientation="-" count="2" sizes="0.5;0.5">
+     <DockSplitter orientation="|" count="3" sizes="0.336957;0.336957;0.326087">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="3.340633" right="5.000000" bottom="3.140633"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.004924" left="4.527000" bottom="-0.003474" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/CoM/position_actual/x" color="#1ac938"/>
         <curve name="/wolf_controller/CoM/position_reference/x" color="#9467bd"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.012830" right="5.000000" bottom="-0.187170"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.101973" left="4.527000" bottom="-0.098027" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/CoM/position_actual/y" color="#ff7f0e"/>
         <curve name="/wolf_controller/CoM/position_reference/y" color="#17becf"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.617860" right="5.000000" bottom="0.417860"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="-0.018269" left="4.527000" bottom="-0.030125" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/CoM/position_actual/z" color="#f14cc1"/>
         <curve name="/wolf_controller/CoM/position_reference/z" color="#bcbd22"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter sizes="0.337492;0.338148;0.32436" count="3" orientation="|">
+     <DockSplitter orientation="|" count="3" sizes="0.336957;0.336957;0.326087">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.100000" right="5.000000" bottom="-0.100000"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/CoM/velocity_actual/x" color="#1f77b4"/>
         <curve name="/wolf_controller/CoM/velocity_reference/x" color="#ff7f0e"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.100000" right="5.000000" bottom="-0.100000"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/CoM/velocity_actual/y" color="#d62728"/>
         <curve name="/wolf_controller/CoM/velocity_reference/y" color="#f14cc1"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="0.100000" right="5.000000" bottom="-0.100000"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="0.100000" left="4.527000" bottom="-0.100000" right="9.527000"/>
         <limitY/>
         <curve name="/wolf_controller/CoM/velocity_actual/z" color="#1ac938"/>
         <curve name="/wolf_controller/CoM/velocity_reference/z" color="#9467bd"/>
@@ -243,31 +241,31 @@
   </Tab>
   <Tab tab_name="contacts" containers="1">
    <Container>
-    <DockSplitter sizes="0.249718;0.250847;0.249718;0.249718" count="4" orientation="-">
+    <DockSplitter orientation="-" count="4" sizes="0.25;0.25;0.25;0.25">
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="1.025000" right="5.000000" bottom="-0.025000"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="0.000000" bottom="-0.100000" right="0.000000"/>
        <limitY/>
        <curve name="/wolf_controller/contact_forces/contact.0" color="#1f77b4"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="1.025000" right="5.000000" bottom="-0.025000"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="0.000000" bottom="-0.100000" right="0.000000"/>
        <limitY/>
        <curve name="/wolf_controller/contact_forces/contact.1" color="#d62728"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="1.025000" right="5.000000" bottom="-0.025000"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="0.000000" bottom="-0.100000" right="0.000000"/>
        <limitY/>
        <curve name="/wolf_controller/contact_forces/contact.2" color="#1ac938"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range left="0.000000" top="1.025000" right="5.000000" bottom="-0.025000"/>
+      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+       <range top="0.100000" left="0.000000" bottom="-0.100000" right="0.000000"/>
        <limitY/>
        <curve name="/wolf_controller/contact_forces/contact.3" color="#ff7f0e"/>
       </plot>
@@ -277,108 +275,84 @@
   </Tab>
   <Tab tab_name="contact_forces" containers="1">
    <Container>
-    <DockSplitter sizes="0.249718;0.250847;0.249718;0.249718" count="4" orientation="-">
-     <DockSplitter sizes="0.337492;0.338148;0.32436" count="3" orientation="|">
+    <DockSplitter orientation="-" count="4" sizes="0.25;0.25;0.25;0.25">
+     <DockSplitter orientation="|" count="3" sizes="0.336957;0.336957;0.326087">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="20.440961" right="5.000000" bottom="-37.079418"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.0/force/x" color="#f14cc1"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.0/force/x" color="#1f77b4"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="160.431663" right="5.000000" bottom="-37.361155"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.0/force/y" color="#1f77b4"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.0/force/y" color="#d62728"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="225.730797" right="5.000000" bottom="-6.898780"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.0/force/z" color="#d62728"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.0/force/z" color="#1ac938"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter sizes="0.337492;0.338148;0.32436" count="3" orientation="|">
+     <DockSplitter orientation="|" count="3" sizes="0.336957;0.336957;0.326087">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="30.996842" right="5.000000" bottom="-28.365137"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.1/force/x" color="#9467bd"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.1/force/x" color="#ff7f0e"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="112.202619" right="5.000000" bottom="-91.710135"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.1/force/y" color="#1ac938"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.1/force/y" color="#f14cc1"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="227.876297" right="5.000000" bottom="-5.695336"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.1/force/z" color="#ff7f0e"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.1/force/z" color="#9467bd"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter sizes="0.337492;0.338148;0.32436" count="3" orientation="|">
+     <DockSplitter orientation="|" count="3" sizes="0.336957;0.336957;0.326087">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="19.582195" right="5.000000" bottom="-24.322606"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.2/force/x" color="#17becf"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.2/force/x" color="#17becf"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="41.963622" right="5.000000" bottom="-58.211527"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.2/force/y" color="#f14cc1"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.2/force/y" color="#bcbd22"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="127.575488" right="5.000000" bottom="-3.181535"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.2/force/z" color="#9467bd"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.2/force/z" color="#1f77b4"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter sizes="0.337492;0.338148;0.32436" count="3" orientation="|">
+     <DockSplitter orientation="|" count="3" sizes="0.336957;0.336957;0.326087">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="13.224923" right="5.000000" bottom="-32.776514"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.3/force/x" color="#bcbd22"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.3/force/x" color="#d62728"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="43.805230" right="5.000000" bottom="-37.384933"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.3/force/y" color="#17becf"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.3/force/y" color="#1ac938"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range left="0.000000" top="119.360000" right="5.000000" bottom="-3.482289"/>
+       <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+        <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
         <limitY/>
-        <curve name="/wolf_controller/contact_forces/contact_forces.3/force/z" color="#bcbd22"/>
-        <curve name="/wolf_controller/contact_forces/des_contact_forces.3/force/z" color="#ff7f0e"/>
        </plot>
       </DockArea>
      </DockSplitter>
@@ -387,45 +361,33 @@
   </Tab>
   <Tab tab_name="torques_des" containers="1">
    <Container>
-    <DockSplitter sizes="1" count="1" orientation="-">
-     <DockSplitter sizes="0.5;0.5" count="2" orientation="|">
-      <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
+    <DockSplitter orientation="-" count="1" sizes="1">
+     <DockSplitter orientation="|" count="2" sizes="0.5;0.5">
+      <DockSplitter orientation="-" count="2" sizes="0.5;0.5">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range left="0.000000" top="59.007698" right="5.000000" bottom="-76.927688"/>
+        <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+         <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
          <limitY/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.6" color="#1f77b4"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.7" color="#d62728"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.8" color="#1ac938"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range left="0.000000" top="42.785969" right="5.000000" bottom="-19.690603"/>
+        <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+         <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
          <limitY/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.12" color="#17becf"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.13" color="#bcbd22"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.14" color="#1f77b4"/>
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
+      <DockSplitter orientation="-" count="2" sizes="0.5;0.5">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range left="0.000000" top="53.982149" right="5.000000" bottom="-65.464556"/>
+        <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+         <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
          <limitY/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.9" color="#ff7f0e"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.10" color="#f14cc1"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.11" color="#9467bd"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range left="0.000000" top="34.830116" right="5.000000" bottom="-10.657806"/>
+        <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
+         <range top="1.000000" left="0.000000" bottom="0.000000" right="1.000000"/>
          <limitY/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.15" color="#d62728"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.16" color="#1ac938"/>
-         <curve name="/wolf_controller/des_joint_efforts_solver/array.0/array/data.17" color="#ff7f0e"/>
         </plot>
        </DockArea>
       </DockSplitter>
@@ -433,14 +395,14 @@
     </DockSplitter>
    </Container>
   </Tab>
-  <currentTabIndex index="1"/>
+  <currentTabIndex index="3"/>
  </tabbed_widget>
  <use_relative_time_offset enabled="1"/>
  <!-- - - - - - - - - - - - - - - -->
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <default time_axis="" delimiter="0"/>
+   <parameters delimiter="0" time_axis=""/>
   </plugin>
   <plugin ID="DataLoad MCAP"/>
   <plugin ID="DataLoad ROS bags">
@@ -449,6 +411,7 @@
    <max_array_size value="100"/>
    <boolean_strings_to_number value="false"/>
    <remove_suffix_from_strings value="false"/>
+   <selected_topics value=""/>
   </plugin>
   <plugin ID="DataLoad ULog"/>
   <plugin ID="ROS Topic Subscriber">
@@ -457,6 +420,7 @@
    <max_array_size value="100"/>
    <boolean_strings_to_number value="false"/>
    <remove_suffix_from_strings value="false"/>
+   <selected_topics value="/clock;/gazebo/link_states;/gazebo/model_states;/gazebo/parameter_descriptions;/gazebo/parameter_updates;/gazebo/performance_metrics;/ground_truth;/joint_states;/lf_foot_bumper;/lf_shin_bumper;/lh_foot_bumper;/lh_shin_bumper;/odometry/robot;/rf_foot_bumper;/rf_shin_bumper;/rh_foot_bumper;/rh_shin_bumper;/rosout;/rosout_agg;/tf;/tf_static;/trunk_imu/data;/wolf_controller/CoM;/wolf_controller/CoM/parameter_descriptions;/wolf_controller/CoM/parameter_updates;/wolf_controller/angular_momentum;/wolf_controller/angular_momentum/parameter_descriptions;/wolf_controller/angular_momentum/parameter_updates;/wolf_controller/base_height;/wolf_controller/capture_point;/wolf_controller/contact_forces;/wolf_controller/controller_state;/wolf_controller/des_base_height;/wolf_controller/floating_base_position;/wolf_controller/floating_base_rpy;/wolf_controller/floating_base_velocity;/wolf_controller/foot_holds;/wolf_controller/friction_cones;/wolf_controller/keyboard;/wolf_controller/lf_foot;/wolf_controller/lf_foot/parameter_descriptions;/wolf_controller/lf_foot/parameter_updates;/wolf_controller/lf_foot/wp;/wolf_controller/lf_foot_wrench;/wolf_controller/lf_foot_wrench/parameter_descriptions;/wolf_controller/lf_foot_wrench/parameter_updates;/wolf_controller/lh_foot;/wolf_controller/lh_foot/parameter_descriptions;/wolf_controller/lh_foot/parameter_updates;/wolf_controller/lh_foot/wp;/wolf_controller/lh_foot_wrench;/wolf_controller/lh_foot_wrench/parameter_descriptions;/wolf_controller/lh_foot_wrench/parameter_updates;/wolf_controller/marker/lf_foot/update;/wolf_controller/marker/lf_foot/update_full;/wolf_controller/marker/lh_foot/update;/wolf_controller/marker/lh_foot/update_full;/wolf_controller/marker/rf_foot/update;/wolf_controller/marker/rf_foot/update_full;/wolf_controller/marker/rh_foot/update;/wolf_controller/marker/rh_foot/update_full;/wolf_controller/marker/waist/update;/wolf_controller/marker/waist/update_full;/wolf_controller/mpc_observation;/wolf_controller/parameter_descriptions;/wolf_controller/parameter_updates;/wolf_controller/position_reference_lf;/wolf_controller/position_reference_lh;/wolf_controller/position_reference_rf;/wolf_controller/position_reference_rh;/wolf_controller/postural;/wolf_controller/postural/parameter_descriptions;/wolf_controller/postural/parameter_updates;/wolf_controller/rf_foot;/wolf_controller/rf_foot/parameter_descriptions;/wolf_controller/rf_foot/parameter_updates;/wolf_controller/rf_foot/wp;/wolf_controller/rf_foot_wrench;/wolf_controller/rf_foot_wrench/parameter_descriptions;/wolf_controller/rf_foot_wrench/parameter_updates;/wolf_controller/rh_foot;/wolf_controller/rh_foot/parameter_descriptions;/wolf_controller/rh_foot/parameter_updates;/wolf_controller/rh_foot/wp;/wolf_controller/rh_foot_wrench;/wolf_controller/rh_foot_wrench/parameter_descriptions;/wolf_controller/rh_foot_wrench/parameter_updates;/wolf_controller/terrain_estimation;/wolf_controller/velocity_reference_lf;/wolf_controller/velocity_reference_lh;/wolf_controller/velocity_reference_rf;/wolf_controller/velocity_reference_rh;/wolf_controller/waist;/wolf_controller/waist/parameter_descriptions;/wolf_controller/waist/parameter_updates;/wolf_controller/waist/wp"/>
   </plugin>
   <plugin ID="UDP Server"/>
   <plugin ID="WebSocket Server"/>
