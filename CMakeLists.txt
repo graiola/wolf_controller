@@ -41,6 +41,7 @@ endif()
 
 # ROS pkgs
 find_package(tf2 REQUIRED)
+find_package(tf2_eigen REQUIRED)
 find_package(controller_interface REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(rviz_visual_tools REQUIRED)
@@ -83,6 +84,7 @@ endif()
 include_directories(
     include/${ROS_VERSION}
     ${tf2_INCLUDE_DIRS}
+    ${tf2_eigen_INCLUDE_DIRS}
     ${controller_interface_INCLUDE_DIRS}
     ${wolf_controller_utils_INCLUDE_DIRS}
     ${wolf_hardware_interface_INCLUDE_DIRS}
@@ -101,6 +103,7 @@ include_directories(
 add_library(wolf_controller SHARED src/${ROS_VERSION}/controller_wrapper.cpp src/${ROS_VERSION}/controller_plugin.cpp)
 target_link_libraries(wolf_controller
     ${tf2_LIBRARIES}
+    ${tf2_eigen_LIBRARIES}
     ${controller_interface_LIBRARIES}
     ${wolf_controller_utils_LIBRARIES}
     ${wolf_hardware_interface_LIBRARIES}
