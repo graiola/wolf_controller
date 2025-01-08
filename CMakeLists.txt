@@ -82,6 +82,7 @@ else()
 endif()
 
 include_directories(
+    /opt/ros/$ENV{ROS_DISTRO}/include/kdl_parser/  # FIX FOR ROS HUMBLE
     include/${ROS_VERSION}
     ${tf2_INCLUDE_DIRS}
     ${tf2_eigen_INCLUDE_DIRS}
