@@ -68,13 +68,13 @@ public:
   /** @brief Destructor function */
   ~WolfController() override;
 
-  controller_interface::return_type init(const std::string &controller_name) override;
-
-  controller_interface::return_type update() override;
-
   controller_interface::InterfaceConfiguration command_interface_configuration() const;
 
   controller_interface::InterfaceConfiguration state_interface_configuration() const;
+
+  controller_interface::return_type update(const rclcpp::Time & time, const rclcpp::Duration & period) override;
+
+  CallbackReturn on_init() override;
 
   CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
 

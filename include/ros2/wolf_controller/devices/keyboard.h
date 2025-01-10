@@ -28,7 +28,7 @@ public:
      */
     typedef std::shared_ptr<const KeyboardHandler> ConstPtr;
 
-    KeyboardHandler(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "keyboard")
+    KeyboardHandler(rclcpp_lifecycle::LifecycleNode::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "keyboard")
         : DeviceHandlerRosInterface(node, controller_ptr, topic)
     {
     }

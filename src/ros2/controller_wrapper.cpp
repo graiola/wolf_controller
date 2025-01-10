@@ -13,7 +13,7 @@
 #include <functional>
 
 
-ControllerRosWrapper::ControllerRosWrapper(rclcpp::Node::SharedPtr controller_node, wolf_controller::ControllerCore* const controller_ptr)
+ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::SharedPtr controller_node, wolf_controller::ControllerCore* const controller_ptr)
 {
   controller_ = controller_ptr;
 

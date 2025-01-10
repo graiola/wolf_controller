@@ -39,7 +39,7 @@ public:
         funct_t f_;
     };
 
-    JoyHandler(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "joy")
+    JoyHandler(rclcpp_lifecycle::LifecycleNode::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "joy")
         : DeviceHandlerRosInterface(node, controller_ptr, topic)
     {
         // Set handlers
@@ -103,7 +103,7 @@ class Ps3JoyHandler : public JoyHandler
 {
 public:
 
-   Ps3JoyHandler(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "joy")
+   Ps3JoyHandler(rclcpp_lifecycle::LifecycleNode::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "joy")
         : JoyHandler(node, controller_ptr, topic)
    {
    }
@@ -148,7 +148,7 @@ class XboxJoyHandler : public JoyHandler
 {
 public:
 
-    XboxJoyHandler(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "joy")
+    XboxJoyHandler(rclcpp_lifecycle::LifecycleNode::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "joy")
          : JoyHandler(node, controller_ptr, topic)
     {
     }
@@ -193,7 +193,7 @@ class SpaceJoyHandler : public JoyHandler
 {
 public:
 
-    SpaceJoyHandler(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "/spacenav/joy")
+    SpaceJoyHandler(rclcpp_lifecycle::LifecycleNode::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "/spacenav/joy")
          : JoyHandler(node, controller_ptr, topic)
     {
         th = 0.5;

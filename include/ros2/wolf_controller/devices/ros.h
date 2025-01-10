@@ -21,7 +21,7 @@ class DeviceHandlerRosInterface : public DeviceHandlerInterface
 
 public:
 
-  DeviceHandlerRosInterface(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic)
+  DeviceHandlerRosInterface(rclcpp_lifecycle::LifecycleNode::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic)
     : DeviceHandlerInterface(), controller_ptr_(controller_ptr)
   {
     assert(controller_ptr);

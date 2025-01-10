@@ -53,18 +53,20 @@ WolfController::~WolfController()
   odom_publisher_thread_->join();
 }
 
-controller_interface::return_type WolfController::init(const string &controller_name)
+rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfController::on_init()
 {
   // initialize lifecycle node
   rclcpp::NodeOptions node_options;
   node_options.start_parameter_services(true);
   node_options.allow_undeclared_parameters(true);
   node_options.automatically_declare_parameters_from_overrides(true);
-  auto ret = ControllerInterface::init(controller_name,node_options);
+  std::string robot_namespace = "";
+  std::string controller_name = "wolf_controller";
+  auto ret = ControllerInterfaceBase::init(controller_name,robot_namespace,node_options);
   //auto ret = ControllerInterface::init(controller_name);
   if (ret != controller_interface::return_type::OK)
   {
-    return ret;
+    return CallbackReturn::FAILURE;
   }
 
   try
@@ -118,10 +120,10 @@ controller_interface::return_type WolfController::init(const string &controller_
   catch (const std::exception & e)
   {
     fprintf(stderr, "Exception thrown during init stage with message: %s \n", e.what());
-    return controller_interface::return_type::ERROR;
+    return CallbackReturn::ERROR;
   }
 
-  return controller_interface::return_type::OK;
+  return CallbackReturn::SUCCESS;
 }
 
 controller_interface::InterfaceConfiguration WolfController::command_interface_configuration() const
@@ -379,14 +381,14 @@ void WolfController::readImu()
   controller_->setImuAccelerometer(tmp_acc_);
 }
 
-controller_interface::return_type WolfController::update()
+controller_interface::return_type WolfController::update(const rclcpp::Time & time, const rclcpp::Duration & period)
 {
 
   // NOTE: This has to be done here because the controller's lifecycle node state has to be ACTIVE in order
   // to retrieve the ROS params in the task wrappers
   controller_->getIDProblem()->init(robot_name_,period_);
 
-  /*auto logger = node_->get_logger();
+  /*auto logger = get_node()->get_logger();
   if (get_current_state().id() == State::PRIMARY_STATE_INACTIVE)
   {
     if (!is_halted)
@@ -396,10 +398,6 @@ controller_interface::return_type WolfController::update()
     }
     return controller_interface::return_type::OK;
   }*/
-
-  const rclcpp::Time& time = node_->get_clock()->now();
-
-  rclcpp::Duration period = time - prev_time_;
 
   // Update input devices
   devices_.writeToOutput(period_);

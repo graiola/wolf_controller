@@ -12,6 +12,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 
 // ROS
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <realtime_tools/realtime_publisher.h>
 #include <std_srvs/srv/trigger.hpp>
 
@@ -51,7 +52,7 @@ public:
 
     using Ptr = std::shared_ptr<ControllerRosWrapper>;
 
-    ControllerRosWrapper(rclcpp::Node::SharedPtr controller_node, wolf_controller::ControllerCore* const controller_ptr);
+    ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::SharedPtr controller_node, wolf_controller::ControllerCore* const controller_ptr);
 
     using TriggerRequest = std_srvs::srv::Trigger::Request;
     using TriggerResponse = std_srvs::srv::Trigger::Response;

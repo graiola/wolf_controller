@@ -28,7 +28,7 @@ public:
      */
     using ConstPtr = std::shared_ptr<const TwistHandler>;
 
-    TwistHandler(rclcpp::Node::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "twist")
+    TwistHandler(rclcpp_lifecycle::LifecycleNode::SharedPtr node, wolf_controller::ControllerCore* controller_ptr, const std::string& topic = "twist")
         : DeviceHandlerRosInterface<geometry_msgs::msg::Twist>(node, controller_ptr, topic)
     {
     }
