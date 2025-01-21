@@ -93,10 +93,10 @@
 
     <!-- Spawn wolf controller and joint state broadcaster -->
     <node name="wolf_controller_spawner"
-          pkg="controller_manager" exec="spawner.py" output="screen"
+          pkg="controller_manager" exec="spawner" output="screen"
           args="wolf_controller" />
     <node name="broadcaster_spawner"
-          pkg="controller_manager" exec="spawner.py" output="screen"
+          pkg="controller_manager" exec="spawner" output="screen"
           args="joint_state_broadcaster" />
 
     <!-- Keyboard node -->

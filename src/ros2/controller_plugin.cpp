@@ -56,18 +56,18 @@ WolfController::~WolfController()
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfController::on_init()
 {
   // initialize lifecycle node
-  rclcpp::NodeOptions node_options;
-  node_options.start_parameter_services(true);
-  node_options.allow_undeclared_parameters(true);
-  node_options.automatically_declare_parameters_from_overrides(true);
-  std::string robot_namespace = "";
-  std::string controller_name = "wolf_controller";
-  auto ret = ControllerInterfaceBase::init(controller_name,robot_namespace,node_options);
+  //rclcpp::NodeOptions node_options;
+  //node_options.start_parameter_services(true);
+  //node_options.allow_undeclared_parameters(true);
+  //node_options.automatically_declare_parameters_from_overrides(true);
+  //std::string robot_namespace = "";
+  //std::string controller_name = "wolf_controller";
+  //auto ret = ControllerInterfaceBase::init(controller_name,robot_namespace,node_options);
   //auto ret = ControllerInterface::init(controller_name);
-  if (ret != controller_interface::return_type::OK)
-  {
-    return CallbackReturn::FAILURE;
-  }
+  //if (ret != controller_interface::return_type::OK)
+  //{
+  //  return CallbackReturn::FAILURE;
+  //}
 
   try
   {
@@ -209,128 +209,102 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfController::on_activate(const rclcpp_lifecycle::State &previous_state)
 {
-
-  // register handles for position, velocity, and effort state interfaces
+  // Reserve space for joint handles
   joint_handles_.reserve(controller_->getJointNames().size());
 
   for (const auto &joint_name : controller_->getJointNames())
   {
-    RCLCPP_INFO(get_node()->get_logger(), "Activate joint %s" , joint_name.c_str());
+    RCLCPP_INFO(get_node()->get_logger(), "Activating joint %s", joint_name.c_str());
 
-    // Find position interface
+    // Position handle
     const auto position_handle = std::find_if(
-          state_interfaces_.cbegin(), state_interfaces_.cend(), [&joint_name](const auto &interface) {
-      return interface.get_name() == joint_name &&
-          interface.get_interface_name() == hardware_interface::HW_IF_POSITION;
-    });
+        state_interfaces_.cbegin(), state_interfaces_.cend(),
+        [&joint_name](const auto &interface) {
+          return interface.get_prefix_name() == joint_name &&
+                 interface.get_interface_name() == hardware_interface::HW_IF_POSITION;
+        });
 
     if (position_handle == state_interfaces_.cend())
     {
-      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint position state handle for %s", joint_name.c_str());
-      return CallbackReturn::ERROR;
+      RCLCPP_ERROR(get_node()->get_logger(), "Failed to find position state handle for joint %s", joint_name.c_str());
+      return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
     }
 
-    // Find velocity interface
+    // Velocity handle
     const auto velocity_handle = std::find_if(
-          state_interfaces_.cbegin(), state_interfaces_.cend(), [&joint_name](const auto &interface) {
-      return interface.get_name() == joint_name &&
-          interface.get_interface_name() == hardware_interface::HW_IF_VELOCITY;
-    });
+        state_interfaces_.cbegin(), state_interfaces_.cend(),
+        [&joint_name](const auto &interface) {
+          return interface.get_prefix_name() == joint_name &&
+                 interface.get_interface_name() == hardware_interface::HW_IF_VELOCITY;
+        });
 
     if (velocity_handle == state_interfaces_.cend())
     {
-      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint velocity state handle for %s", joint_name.c_str());
-      return CallbackReturn::ERROR;
+      RCLCPP_ERROR(get_node()->get_logger(), "Failed to find velocity state handle for joint %s", joint_name.c_str());
+      return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
     }
 
-    // Find effort interface (for state)
+    // Effort state handle
     const auto effort_state_handle = std::find_if(
-          state_interfaces_.cbegin(), state_interfaces_.cend(), [&joint_name](const auto &interface) {
-      return interface.get_name() == joint_name &&
-          interface.get_interface_name() == hardware_interface::HW_IF_EFFORT;
-    });
+        state_interfaces_.cbegin(), state_interfaces_.cend(),
+        [&joint_name](const auto &interface) {
+          return interface.get_prefix_name() == joint_name &&
+                 interface.get_interface_name() == hardware_interface::HW_IF_EFFORT;
+        });
 
     if (effort_state_handle == state_interfaces_.cend())
     {
-      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint effort state handle for %s", joint_name.c_str());
-      return CallbackReturn::ERROR;
+      RCLCPP_ERROR(get_node()->get_logger(), "Failed to find effort state handle for joint %s", joint_name.c_str());
+      return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
     }
 
-    // Find effort interface (for command)
+    // Effort command handle
     const auto effort_command_handle = std::find_if(
-          command_interfaces_.begin(), command_interfaces_.end(), [&joint_name](const auto &interface) {
-      return interface.get_name() == joint_name &&
-          interface.get_interface_name() == hardware_interface::HW_IF_EFFORT;
-    });
+        command_interfaces_.begin(), command_interfaces_.end(),
+        [&joint_name](const auto &interface) {
+          return interface.get_prefix_name() == joint_name &&
+                 interface.get_interface_name() == hardware_interface::HW_IF_EFFORT;
+        });
 
     if (effort_command_handle == command_interfaces_.end())
     {
-      RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain joint effort command handle for %s", joint_name.c_str());
-      return CallbackReturn::ERROR;
+      RCLCPP_ERROR(get_node()->get_logger(), "Failed to find effort command handle for joint %s", joint_name.c_str());
+      return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
     }
 
-    // Emplace joint handles with position, velocity, and effort state, and effort command interfaces
-    joint_handles_.push_back(
-          JointHandle{
-            std::ref(*position_handle),  // Position
-            std::ref(*velocity_handle),  // Velocity
-            std::ref(*effort_state_handle), // Effort (State)
-            std::ref(*effort_command_handle), // Effort (Command)
-            joint_name
-          });
+    // Add joint handle
+    joint_handles_.emplace_back(
+        JointHandle{
+            std::ref(*position_handle),
+            std::ref(*velocity_handle),
+            std::ref(*effort_state_handle),
+            std::ref(*effort_command_handle),
+            joint_name});
   }
 
-  // Register IMU handles
-  const std::string imu_name = imu_name_;  // Ensure imu_name_ is set
-  const auto orientation_x = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.x";
-  });
+  // Handle IMU state interfaces
+  const std::string imu_name = imu_name_; // Assume imu_name_ is initialized
 
-  const auto orientation_y = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.y";
-  });
+  const auto find_imu_handle = [this, &imu_name](const std::string &interface_name) {
+    return std::find_if(
+        state_interfaces_.cbegin(), state_interfaces_.cend(),
+        [&imu_name, &interface_name](const auto &interface) {
+          return interface.get_prefix_name() == imu_name && interface.get_interface_name() == interface_name;
+        });
+  };
 
-  const auto orientation_z = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.z";
-  });
+  auto orientation_x = find_imu_handle("orientation.x");
+  auto orientation_y = find_imu_handle("orientation.y");
+  auto orientation_z = find_imu_handle("orientation.z");
+  auto orientation_w = find_imu_handle("orientation.w");
 
-  const auto orientation_w = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "orientation.w";
-  });
+  auto angular_velocity_x = find_imu_handle("angular_velocity.x");
+  auto angular_velocity_y = find_imu_handle("angular_velocity.y");
+  auto angular_velocity_z = find_imu_handle("angular_velocity.z");
 
-  const auto angular_velocity_x = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "angular_velocity.x";
-  });
-
-  const auto angular_velocity_y = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "angular_velocity.y";
-  });
-
-  const auto angular_velocity_z = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "angular_velocity.z";
-  });
-
-  const auto linear_acceleration_x = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "linear_acceleration.x";
-  });
-
-  const auto linear_acceleration_y = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "linear_acceleration.y";
-  });
-
-  const auto linear_acceleration_z = std::find_if(
-        state_interfaces_.cbegin(), state_interfaces_.cend(), [&imu_name](const auto & interface) {
-    return interface.get_name() == imu_name && interface.get_interface_name() == "linear_acceleration.z";
-  });
+  auto linear_acceleration_x = find_imu_handle("linear_acceleration.x");
+  auto linear_acceleration_y = find_imu_handle("linear_acceleration.y");
+  auto linear_acceleration_z = find_imu_handle("linear_acceleration.z");
 
   if (orientation_x == state_interfaces_.cend() || orientation_y == state_interfaces_.cend() ||
       orientation_z == state_interfaces_.cend() || orientation_w == state_interfaces_.cend() ||
@@ -338,16 +312,16 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
       angular_velocity_z == state_interfaces_.cend() || linear_acceleration_x == state_interfaces_.cend() ||
       linear_acceleration_y == state_interfaces_.cend() || linear_acceleration_z == state_interfaces_.cend())
   {
-    RCLCPP_ERROR(get_node()->get_logger(), "Unable to obtain IMU state interfaces");
-    return CallbackReturn::ERROR;
+    RCLCPP_ERROR(get_node()->get_logger(), "Failed to find required IMU state interfaces");
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
   }
 
   imu_handle_ = std::make_unique<IMUHandle>(
-        std::ref(*orientation_x), std::ref(*orientation_y), std::ref(*orientation_z), std::ref(*orientation_w),
-        std::ref(*angular_velocity_x), std::ref(*angular_velocity_y), std::ref(*angular_velocity_z),
-        std::ref(*linear_acceleration_x), std::ref(*linear_acceleration_y), std::ref(*linear_acceleration_z), imu_name);
+      std::ref(*orientation_x), std::ref(*orientation_y), std::ref(*orientation_z), std::ref(*orientation_w),
+      std::ref(*angular_velocity_x), std::ref(*angular_velocity_y), std::ref(*angular_velocity_z),
+      std::ref(*linear_acceleration_x), std::ref(*linear_acceleration_y), std::ref(*linear_acceleration_z), imu_name);
 
-  return CallbackReturn::SUCCESS;
+  return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
 
 void WolfController::readJoints()
