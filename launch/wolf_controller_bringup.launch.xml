@@ -95,10 +95,14 @@
     <!-- Spawn wolf controller and joint state broadcaster -->
     <node name="wolf_controller_spawner"
           pkg="controller_manager" exec="spawner" output="screen"
-          args="wolf_controller" />
+          args="wolf_controller"
+          launch-prefix="bash -c 'sleep 5; $0 $@' "/>
+
+    <!-- Spawn joint state broadcaster after a longer delay -->
     <node name="broadcaster_spawner"
           pkg="controller_manager" exec="spawner" output="screen"
-          args="joint_state_broadcaster" />
+          args="joint_state_broadcaster"
+          launch-prefix="bash -c 'sleep 1; $0 $@' "/>
 
     <!-- Keyboard node -->
     <group if="$(eval '\'$(var input_device)\' == \'keyboard\'')">
