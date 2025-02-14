@@ -430,84 +430,86 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   ddr_server_->publishServicesTopics();
 #endif
 
+  std::string service_ns = "wolf_controller";
+
   // ROS services
   switch_control_mode_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "switch_control_mode",
+        service_ns+"/switch_control_mode",
         std::bind(&ControllerRosWrapper::switchControlModeCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   switch_gait_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "switch_gait",
+        service_ns+"/switch_gait",
         std::bind(&ControllerRosWrapper::switchGaitCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   switch_posture_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "switch_posture",
+        service_ns+"/switch_posture",
         std::bind(&ControllerRosWrapper::switchPostureCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   stand_up_srv_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "stand_up",
+        service_ns+"/stand_up",
         std::bind(&ControllerRosWrapper::standUpCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   stand_down_srv_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "stand_down",
+        service_ns+"/stand_down",
         std::bind(&ControllerRosWrapper::standDownCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   emergency_stop_srv_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "emergency_stop",
+        service_ns+"/emergency_stop",
         std::bind(&ControllerRosWrapper::emergencyStopCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   reset_base_srv_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "reset_base",
+        service_ns+"/reset_base",
         std::bind(&ControllerRosWrapper::resetBaseCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   decrease_step_height_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "decrease_step_height",
+        service_ns+"/decrease_step_height",
         std::bind(&ControllerRosWrapper::decreaseStepHeightCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   increase_step_height_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "increase_step_height",
+        service_ns+"/increase_step_height",
         std::bind(&ControllerRosWrapper::increaseStepHeightCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   set_step_height_ = controller_node->create_service<wolf_msgs::srv::Float32>(
-        "set_step_height",
+        service_ns+"/set_step_height",
         std::bind(&ControllerRosWrapper::setStepHeightCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   activate_push_recovery_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "activate_push_recovery",
+        service_ns+"/activate_push_recovery",
         std::bind(&ControllerRosWrapper::activatePushRecoveryCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   activate_step_reflex_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "activate_step_reflex",
+        service_ns+"/activate_step_reflex",
         std::bind(&ControllerRosWrapper::activateStepReflexCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   increase_swing_frequency_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "increase_swing_frequency",
+        service_ns+"/increase_swing_frequency",
         std::bind(&ControllerRosWrapper::increaseSwingFrequencyCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   decrease_swing_frequency_ = controller_node->create_service<std_srvs::srv::Trigger>(
-        "decrease_swing_frequency",
+        service_ns+"/decrease_swing_frequency",
         std::bind(&ControllerRosWrapper::decreaseSwingFrequencyCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   set_swing_frequency_ = controller_node->create_service<wolf_msgs::srv::Float32>(
-        "set_swing_frequency",
+        service_ns+"/set_swing_frequency",
         std::bind(&ControllerRosWrapper::setSwingFrequencyCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
   set_duty_factor_ = controller_node->create_service<wolf_msgs::srv::Float32>(
-        "set_duty_factor",
+        service_ns+"/set_duty_factor",
         std::bind(&ControllerRosWrapper::setDutyFactorCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 

@@ -174,7 +174,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
 
   // configure
   period_             = get_node()->get_parameter("period").as_double();
-  robot_name_         = get_node()->get_parameter("robot_name").as_string();
+  robot_name_         = get_string_parameter_from_remote_node("robot_description/robot_name");
   tf_prefix_          = get_node()->get_parameter("tf_prefix").as_string();
   urdf                = get_string_parameter_from_remote_node("robot_description/description");
   srdf                = get_string_parameter_from_remote_node("robot_description_semantic/description");

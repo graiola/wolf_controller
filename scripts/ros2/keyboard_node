@@ -107,10 +107,16 @@ class WolfKeyboardController(Node):
         X = 710
         Y = 440
         self.display_surface = pygame.display.set_mode((X, Y))
+        
+        self.declare_parameter('robot_name', '')
+        self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
 
-        self.robot_name = 'wolf_keyboard'
+        if self.robot_name == '':
+            title = 'wolf_keyboard'
+        else:
+            title = self.robot_name
 
-        pygame.display.set_caption(f'{self.robot_name} controls: press 1 to change view')
+        pygame.display.set_caption(f'{title} controls: press 1 to change view')
 
         # create a surface object, image is drawn on it.
         self.simple_view = TriggerButton(True)
@@ -121,14 +127,14 @@ class WolfKeyboardController(Node):
         self.twist_pub = self.create_publisher(Twist, 'wolf_controller/keyboard', 1)
 
         # Trigger services handlers
-        self.reset_base_service = TriggerService(self, '/reset_base')
-        self.switch_posture_service = TriggerService(self, '/switch_posture')
-        self.emergency_stop_service = TriggerService(self, '/emergency_stop')
-        self.switch_gait_service = TriggerService(self, '/switch_gait')
-        self.activate_push_recovery_service = TriggerService(self, '/activate_push_recovery')
-        self.increase_step_service = TriggerService(self, '/increase_step_height')
-        self.decrease_step_service = TriggerService(self, '/decrease_step_height')
-        self.switch_control_mode_service = TriggerService(self, '/switch_control_mode')
+        self.reset_base_service = TriggerService(self, 'wolf_controller/reset_base')
+        self.switch_posture_service = TriggerService(self, 'wolf_controller/switch_posture')
+        self.emergency_stop_service = TriggerService(self, 'wolf_controller/emergency_stop')
+        self.switch_gait_service = TriggerService(self, 'wolf_controller/switch_gait')
+        self.activate_push_recovery_service = TriggerService(self, 'wolf_controller/activate_push_recovery')
+        self.increase_step_service = TriggerService(self, 'wolf_controller/increase_step_height')
+        self.decrease_step_service = TriggerService(self, 'wolf_controller/decrease_step_height')
+        self.switch_control_mode_service = TriggerService(self, 'wolf_controller/switch_control_mode')
 
         self.timer = self.create_timer(0.01, self.main_loop)
 
