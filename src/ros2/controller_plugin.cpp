@@ -442,7 +442,7 @@ void WolfController::odomPublisher()
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
 
   if (publish_odom_msg_)
-    odom_pub = get_node()->create_publisher<nav_msgs::msg::Odometry>("odometry/robot", 100);
+    odom_pub = get_node()->create_publisher<nav_msgs::msg::Odometry>(odom_topic_, 100);
 
   rclcpp::Rate publishing_rate(odom_pub_rate_);
 
