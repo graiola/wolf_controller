@@ -80,6 +80,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     auto_declare<bool>("use_contact_sensors", false);
     auto_declare<bool>("publish_odom_tf",     false);
     auto_declare<bool>("publish_odom_msg",    false);
+    auto_declare<std::string>("odom_topic",   "odometry/robot");
 
     // Gains parameters
     // Leg proportional gains (Kp_leg)
@@ -183,6 +184,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
   use_contact_sensors = get_node()->get_parameter("use_contact_sensors").as_bool();
   publish_odom_tf_    = get_node()->get_parameter("publish_odom_tf").as_bool();
   publish_odom_msg_   = get_node()->get_parameter("publish_odom_msg").as_bool();
+  odom_topic_         = get_node()->get_parameter("odom_topic").as_string();
 
   // Create the controller core
   controller_ = std::make_shared<ControllerCore>();
