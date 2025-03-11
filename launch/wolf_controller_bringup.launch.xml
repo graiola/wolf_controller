@@ -99,7 +99,7 @@
         <!-- Spawn wolf controller and joint state broadcaster -->
         <node name="wolf_controller_spawner"
             pkg="controller_manager" exec="spawner" output="screen"
-            args="wolf_controller"
+            args="wolf_controller --param-file $(find-pkg-share $(var robot_model)_description)/params/$(var robot_model)_params.ros2.yaml"
             launch-prefix="bash -c 'sleep 5; $0 $@' "/>
 
         <!-- Spawn joint state broadcaster after a longer delay -->
