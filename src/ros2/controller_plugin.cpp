@@ -185,6 +185,8 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
   publish_odom_tf_    = get_node()->get_parameter("publish_odom_tf").as_bool();
   publish_odom_msg_   = get_node()->get_parameter("publish_odom_msg").as_bool();
   odom_topic_         = get_node()->get_parameter("odom_topic").as_string();
+  
+  fixTFprefix(tf_prefix_);
 
   // Create the controller core
   controller_ = std::make_shared<ControllerCore>();

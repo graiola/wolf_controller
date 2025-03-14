@@ -91,7 +91,7 @@
         <!-- Convert joint states to TF transforms for rviz, etc -->
         <node name="robot_state_publisher" pkg="robot_state_publisher" exec="robot_state_publisher" respawn="false" output="log">
             <remap from="/joint_states"     to="$(var robot_name)/joint_states"/>
-            <!--<param name="frame_prefix"      value="$(var robot_name)"/>-->
+            <param name="frame_prefix"      value="$(var robot_name)/"/>
             <param name="robot_description" value="$(command 'xacro $(find-pkg-share $(var robot_model)_description)/robots/$(var robot_model).urdf.xacro 
             sensors:=$(var sensors) period:=$(var period) arm_name:=$(var arm_name) robot_name:=$(var robot_name)')"/>
         </node>
