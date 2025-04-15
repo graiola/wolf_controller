@@ -40,6 +40,10 @@
     <!-- Planner arguments -->
     <arg name="launch_planner"  default="false" description="launch the MPC planner"/>
 
+    <!-- Controller params file -->
+    <arg name="controller_params"  default="$(find-pkg-share $(var robot_model)_description)/params/$(var robot_model)_params.ros2.yaml" description="ros2 wolf_controller params file"/>
+    
+
     <group>
     <push-ros-namespace namespace="$(var robot_name)"/>
 
@@ -91,15 +95,27 @@
         <!-- Convert joint states to TF transforms for rviz, etc -->
         <node name="robot_state_publisher" pkg="robot_state_publisher" exec="robot_state_publisher" respawn="false" output="log">
             <remap from="/joint_states"     to="$(var robot_name)/joint_states"/>
-            <!--<param name="frame_prefix"      value="$(var robot_name)"/>-->
+            <param name="frame_prefix"      value="$(var robot_name)/"/>
             <param name="robot_description" value="$(command 'xacro $(find-pkg-share $(var robot_model)_description)/robots/$(var robot_model).urdf.xacro 
             sensors:=$(var sensors) period:=$(var period) arm_name:=$(var arm_name) robot_name:=$(var robot_name)')"/>
         </node>
 
         <!-- Spawn wolf controller and joint state broadcaster -->
+        <executable cmd="python3 $(find-pkg-share wolf_controller_utils)/replace_yaml_placeholders.py 
+                $(var controller_params)
+                $(var controller_params)
+                INPUT_DEVICE=$(var input_device)
+                PERIOD=$(var period)
+                MAX_VEL_X=$(var max_vel_x)
+                MAX_VEL_Y=$(var max_vel_y)
+                MAX_VEL_Z=$(var max_vel_z)
+                MAX_VEL_YAW=$(var max_vel_yaw)
+                PUBLISH_ODOM_MSG=$(var publish_odom_msg)
+                PUBLISH_ODOM_TF=$(var publish_odom_tf)
+                TF_PREFIX=$(var robot_name)"/>
         <node name="wolf_controller_spawner"
             pkg="controller_manager" exec="spawner" output="screen"
-            args="wolf_controller"
+            args="wolf_controller --param-file $(var controller_params)"
             launch-prefix="bash -c 'sleep 5; $0 $@' "/>
 
         <!-- Spawn joint state broadcaster after a longer delay -->

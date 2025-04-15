@@ -193,6 +193,8 @@ private:
   bool publish_odom_tf_;
   /** @brief Publish odom msg */
   bool publish_odom_msg_;
+  /** @brief Odom topic */
+  std::string odom_topic_;
   /** @brief Odom publisher rate */
   double odom_pub_rate_;
   /** @brief Controller core */
