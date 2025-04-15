@@ -38,7 +38,8 @@
     <arg name="publish_odom_tf"  default="true" doc="publish the odom tf frame from the controller"/>
 
     <!-- Planner arguments -->
-    <arg name="launch_planner"  default="false" doc="launch the MPC planner"/>
+    <arg name="launch_planner"  default="false"   doc="launch the MPC planner"/>
+    <arg name="planner_type"    default="default" doc="[default/adaptive/perceptive]"/>
 
     <!-- Planner launch file -->
     <group if="$(arg launch_planner)">
@@ -47,6 +48,7 @@
             <arg name="robot_name"        value="$(arg robot_name)" />
             <arg name="rviz_gui"          value="false" />
             <arg name="launch_controller" value="false" />
+            <arg name="planner_type"      value="$(arg planner_type)" />
         </include>
     </group>
 
