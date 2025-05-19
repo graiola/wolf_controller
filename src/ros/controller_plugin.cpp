@@ -368,7 +368,7 @@ void WolfController::odomPublisher()
       world_T_base.linear() = state_estimator->getGroundTruthBaseOrientation().toRotationMatrix();
 
       // Get the estimated z of the base
-      estimated_z = state_estimator->getEstimatedBaseHeight();
+      estimated_z = state_estimator->getBaseHeightInBasefoot();
 
       // Create the tf transform between base_footprint -> world
       tmp_v =  world_T_base.translation();
