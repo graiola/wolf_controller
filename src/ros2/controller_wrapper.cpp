@@ -438,6 +438,11 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
         std::bind(&ControllerRosWrapper::switchControlModeCB, this, std::placeholders::_1, std::placeholders::_2)
         );
 
+  set_control_mode_ = controller_node->create_service<wolf_msgs::srv::String>(
+        service_ns+"/set_control_mode",
+        std::bind(&ControllerRosWrapper::setControlModeCB, this, std::placeholders::_1, std::placeholders::_2)
+        );
+
   switch_gait_ = controller_node->create_service<std_srvs::srv::Trigger>(
         service_ns+"/switch_gait",
         std::bind(&ControllerRosWrapper::switchGaitCB, this, std::placeholders::_1, std::placeholders::_2)
@@ -614,6 +619,19 @@ bool ControllerRosWrapper::switchControlModeCB(const std::shared_ptr<std_srvs::s
 {
   res->success = true;
   controller_->switchControlMode();
+  return res->success;
+}
+
+// Set Control Mode
+bool setControlModeCB(const std::shared_ptr<wolf_msgs::srv::String::Request> req,
+                      std::shared_ptr<wolf_msgs::srv::String::Response> res)
+{
+  if (req->data >= 0) {
+    controller_->selectControlMode(req->data);
+    res->success = true;
+  } else {
+    res->success = false;
+  }
   return res->success;
 }
 

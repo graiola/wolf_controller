@@ -28,6 +28,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <wolf_msgs/CapturePoint.h>
 #include <wolf_msgs/ControllerState.h>
 #include <wolf_msgs/Float32.h>
+#include <wolf_msgs/String.h>
 
 // WoLF
 #include <wolf_controller_core/controller_core.h>
@@ -73,6 +74,8 @@ public:
 
     bool switchControlModeCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+    bool setControlModeCB(wolf_msgs::StringRequest& req, wolf_msgs::StringResponse& res);
+
     bool switchGaitCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
     bool switchPostureCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
@@ -109,6 +112,7 @@ protected:
     wolf_controller::ControllerCore* controller_;
     /** @brief ROS services */
     ros::ServiceServer switch_control_mode_;
+    ros::ServiceServer set_control_mode_;
     ros::ServiceServer switch_gait_;
     ros::ServiceServer switch_posture_;
     ros::ServiceServer stand_up_srv_;

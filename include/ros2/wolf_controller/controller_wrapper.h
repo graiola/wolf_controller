@@ -29,6 +29,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-nd/4.0/>.
 #include <wolf_msgs/msg/capture_point.hpp>
 #include <wolf_msgs/msg/controller_state.hpp>
 #include <wolf_msgs/srv/float32.hpp>
+#include <wolf_msgs/srv/string.hpp>
 
 // WoLF
 #include <wolf_controller_core/controller_core.h>
@@ -58,6 +59,8 @@ public:
     using TriggerResponse = std_srvs::srv::Trigger::Response;
     using Float32Request = wolf_msgs::srv::Float32::Request;
     using Float32Response = wolf_msgs::srv::Float32::Response;
+    using StringRequest = wolf_msgs::srv::String::Request;
+    using StringResponse = wolf_msgs::srv::String::Response;
 
     bool increaseSwingFrequencyCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
@@ -78,6 +81,8 @@ public:
     bool decreaseStepHeightCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
     bool switchControlModeCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
+
+    bool setControlModeCB(const StringRequest::SharedPtr req, StringResponse::SharedPtr res);
 
     bool switchGaitCB(const TriggerRequest::SharedPtr req, TriggerResponse::SharedPtr res);
 
@@ -115,6 +120,7 @@ protected:
     wolf_controller::ControllerCore* controller_;
     /** @brief ROS services */
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr switch_control_mode_;
+    rclcpp::Service<wolf_msgs::srv::String>::SharedPtr set_control_mode_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr switch_gait_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr switch_posture_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr stand_up_srv_;

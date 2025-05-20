@@ -371,6 +371,7 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
 
   // ROS services
   switch_control_mode_         = controller_nh.advertiseService("switch_control_mode",         &ControllerRosWrapper::switchControlModeCB,         this);
+  set_control_mode_            = controller_nh.advertiseService("set_control_mode",            &ControllerRosWrapper::setControlModeCB,            this);
   switch_gait_                 = controller_nh.advertiseService("switch_gait",                 &ControllerRosWrapper::switchGaitCB,                this);
   switch_posture_              = controller_nh.advertiseService("switch_posture",              &ControllerRosWrapper::switchPostureCB,             this);
   stand_up_srv_                = controller_nh.advertiseService("stand_up",                    &ControllerRosWrapper::standUpCB,                   this);
@@ -464,6 +465,13 @@ bool ControllerRosWrapper::switchControlModeCB(std_srvs::Trigger::Request& req, 
 {
   res.success = true;
   controller_->switchControlMode();
+  return res.success;
+}
+
+bool ControllerRosWrapper::setControlModeCB(wolf_msgs::StringRequest& req, wolf_msgs::StringResponse& res)
+{
+  res.success = true;
+  controller_->selectControlMode(req.data);
   return res.success;
 }
 
