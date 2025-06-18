@@ -333,7 +333,7 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
 
   // DDynamic reconfigure
   #ifdef DDYNAMIC_RECONFIGURE
-  ddr_server_.reset(new ddynamic_reconfigure::DDynamicReconfigure(controller_nh));
+  ddr_server_.reset(new ddynamic_reconfigure::DDynamicReconfigure(controller_nh,false));
   ddr_server_->registerVariable<bool>("stand_up",false,boost::bind(&wolf_controller::ControllerCore::standUp,controller_,_1),"stand up");
   ddr_server_->registerVariable<bool>("activate_push_recovery",controller_->getFootholdsPlanner()->isPushRecoveryActive(),boost::bind(&wolf_controller::FootholdsPlanner::startPushRecovery,controller_->getFootholdsPlanner(),_1),"activate push recovery");
   ddr_server_->registerVariable<bool>("activate_step_reflex",controller_->getGaitGenerator()->isStepReflexActive(),boost::bind(&wolf_controller::GaitGenerator::startStepReflex,controller_->getGaitGenerator(),_1),"activate step reflex");
