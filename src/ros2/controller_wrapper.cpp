@@ -623,15 +623,11 @@ bool ControllerRosWrapper::switchControlModeCB(const std::shared_ptr<std_srvs::s
 }
 
 // Set Control Mode
-bool setControlModeCB(const std::shared_ptr<wolf_msgs::srv::String::Request> req,
+bool ControllerRosWrapper::setControlModeCB(const std::shared_ptr<wolf_msgs::srv::String::Request> req,
                       std::shared_ptr<wolf_msgs::srv::String::Response> res)
 {
-  if (req->data >= 0) {
-    controller_->selectControlMode(req->data);
-    res->success = true;
-  } else {
-    res->success = false;
-  }
+  res->success = true;
+  controller_->selectControlMode(req->data);
   return res->success;
 }
 
