@@ -115,7 +115,7 @@
                 TF_PREFIX=$(var robot_name)"/>
         <node name="wolf_controller_spawner"
             pkg="controller_manager" exec="spawner" output="screen"
-            args="wolf_controller --param-file $(var controller_params)"
+            args="wolf_controller"
             launch-prefix="bash -c 'sleep 5; $0 $@' "/>
 
         <!-- Spawn joint state broadcaster after a longer delay -->
