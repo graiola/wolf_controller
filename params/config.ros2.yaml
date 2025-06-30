@@ -5,6 +5,9 @@
     wolf_controller:
       type: wolf_controller/WolfController
 
+    diffdrive_controller:
+      type: diff_drive_controller/DiffDriveController
+
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
