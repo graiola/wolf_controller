@@ -127,7 +127,15 @@
         <!-- Keyboard node -->
         <group if="$(eval '\'$(var input_device)\' == \'keyboard\'')">
             <node name="keyboard_node" pkg="wolf_controller" exec="keyboard_node" respawn="true" output="screen">
-                <param name="robot_name" value="$(var robot_name)"/>
+                <param name="robot_name"                  value="$(var robot_name)"/>
+                <param name="reset_base_service"          value="wolf_controller/reset_base"/>
+                <param name="switch_posture_service"      value="wolf_controller/switch_posture"/>
+                <param name="emergency_stop_service"      value="wolf_controller/emergency_stop"/>
+                <param name="switch_gait_service"         value="wolf_controller/switch_gait"/>
+                <param name="push_recovery_service"       value="wolf_controller/activate_push_recovery"/>
+                <param name="increase_step_service"       value="wolf_controller/increase_step_height"/>
+                <param name="decrease_step_service"       value="wolf_controller/decrease_step_height"/>
+                <param name="switch_control_mode_service" value="wolf_controller/switch_control_mode"/>
             </node>
         </group>
 

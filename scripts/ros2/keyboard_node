@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# WOLF Keyboard controller for ROS2
-
 import os
 os.environ["SDL_AUDIODRIVER"] = "dummy"
 
@@ -11,10 +9,10 @@ from rclpy.node import Node
 import numpy as np
 from geometry_msgs.msg import Twist
 from std_srvs.srv import Trigger
+from std_msgs.msg import Bool
 
 from ament_index_python.packages import get_package_share_directory
 
-# Paths for keyboard images/icons
 pkg_share = get_package_share_directory('wolf_controller')
 path_full_keyboard_buttons = os.path.join(pkg_share, "resources/keyboard_controls.png")
 path_simple_keyboard_buttons = os.path.join(pkg_share, "resources/simple_keyboard_controls.png")
@@ -33,16 +31,18 @@ class TriggerService:
     def __init__(self, node, service_name, timeout=5.0):
         self.called = False
         self.node = node
+        self.service_name = service_name
         self._srv = node.create_client(Trigger, service_name)
         if not self._srv.wait_for_service(timeout_sec=timeout):
             node.get_logger().warn(f"{service_name} not available after {timeout}s")
+            self.valid = False
         else:
             node.get_logger().info(f"{service_name} ready")
+            self.valid = True
     def __call__(self):
-        if not self._srv.service_is_ready():
-            return
-        self._srv.call_async(Trigger.Request())
-        self.called = True
+        if self.valid and self._srv.service_is_ready():
+            self._srv.call_async(Trigger.Request())
+            self.called = True
     def reset(self):
         self.called = False
 
@@ -56,15 +56,14 @@ class TriggerButton:
     def reset(self):
         self.called = False
 
-class WolfKeyboardController(Node):
+class KeyboardController(Node):
     def __init__(self):
-        super().__init__('wolf_keyboard_node')
+        super().__init__('keyboard_controller_node')
         pygame.init()
         self.simple_view = TriggerButton(True)
 
-        # Declare parameters
+        # Declare core parameters
         self.declare_parameter('robot_name', '')
-        self.declare_parameter('controller_type', 'wolf')
         self.declare_parameter('max_linear_x', 1.0)
         self.declare_parameter('max_linear_y', 1.0)
         self.declare_parameter('max_linear_z', 1.0)
@@ -72,10 +71,23 @@ class WolfKeyboardController(Node):
         self.declare_parameter('max_angular_y', 1.0)
         self.declare_parameter('max_angular_z', 1.0)
         self.declare_parameter('stop_without_input', False)
+        self.declare_parameter('twist_topic', 'wolf_controller/keyboard')
 
+        # Declare optional service/topic parameters
+        service_keys = [
+            'reset_base_service', 'switch_posture_service', 'emergency_stop_service',
+            'switch_gait_service', 'push_recovery_service', 'increase_step_service',
+            'decrease_step_service', 'switch_control_mode_service'
+        ]
+        for key in service_keys:
+            self.declare_parameter(key, '')
+
+        self.declare_parameter('emergency_stop_topic', '')
+
+        # Read core parameters
         self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
-        self.controller_type = self.get_parameter('controller_type').get_parameter_value().string_value
         self.stop_without_input = self.get_parameter('stop_without_input').get_parameter_value().bool_value
+        twist_topic = self.get_parameter('twist_topic').get_parameter_value().string_value
 
         self.max_linear = np.array([
             self.get_parameter('max_linear_x').get_parameter_value().double_value,
@@ -88,32 +100,48 @@ class WolfKeyboardController(Node):
             self.get_parameter('max_angular_z').get_parameter_value().double_value
         ])
 
-        title = self.robot_name or 'wolf_keyboard'
+        # GUI setup
+        title = self.robot_name or 'keyboard'
         pygame.display.set_caption(f'{title} controls')
         self.display_surface = pygame.display.set_mode((710, 440))
         self.image = pygame.image.load(path_simple_keyboard_buttons)
         pygame.display.set_icon(pygame.image.load(path_icon))
 
-        self.twist_pub = self.create_publisher(Twist, 'wolf_controller/keyboard', 1)
+        self.twist_pub = self.create_publisher(Twist, twist_topic, 1)
+        self.get_logger().info(f"Publishing Twist messages to: {twist_topic}")
 
-        if self.controller_type == 'wolf':
-            self.reset_base_svc = TriggerService(self, 'wolf_controller/reset_base')
-            self.switch_posture_svc = TriggerService(self, 'wolf_controller/switch_posture')
-            self.emergency_stop_svc = TriggerService(self, 'wolf_controller/emergency_stop')
-            self.switch_gait_svc = TriggerService(self, 'wolf_controller/switch_gait')
-            self.push_recovery_svc = TriggerService(self, 'wolf_controller/activate_push_recovery')
-            self.increase_step_svc = TriggerService(self, 'wolf_controller/increase_step_height')
-            self.decrease_step_svc = TriggerService(self, 'wolf_controller/decrease_step_height')
-            self.switch_control_mode_svc = TriggerService(self, 'wolf_controller/switch_control_mode')
+        # Trigger services (dynamically created)
+        self.trigger_services = {}
+        for key in service_keys:
+            name = self.get_parameter(key).get_parameter_value().string_value
+            if name:
+                self.trigger_services[key] = TriggerService(self, name)
+
+        # Emergency stop logic
+        estop_topic = self.get_parameter('emergency_stop_topic').get_parameter_value().string_value
+        estop_service = self.get_parameter('emergency_stop_service').get_parameter_value().string_value
+        self.estop_active = False  # Toggle state
+
+        if estop_topic:
+            self.emergency_stop_type = 'topic'
+            self.emergency_stop_pub = self.create_publisher(Bool, estop_topic, 1)
+            self.emergency_stop = TriggerButton()
+            self.get_logger().info(f"Emergency stop set as topic: {estop_topic}")
+        elif estop_service:
+            self.emergency_stop_type = 'service'
+            self.emergency_stop = TriggerService(self, estop_service)
+            self.get_logger().info(f"Emergency stop set as service: {estop_service}")
         else:
-            self.get_logger().info("Not using wolf_controller – no services will be assigned")
+            self.emergency_stop_type = None
+            self.emergency_stop = None
+            self.get_logger().warn("No emergency stop configured.")
 
         self.timer = self.create_timer(0.01, self.main_loop)
 
     def main_loop(self):
         self.display_surface.fill((255,255,255))
         self.display_surface.blit(self.image, (-125,-50))
-        pygame.event.pump()
+
         keys = pygame.key.get_pressed()
         cmd = np.zeros(6)
         key_pressed = False
@@ -122,48 +150,65 @@ class WolfKeyboardController(Node):
             self.simple_view(not self.simple_view.data)
             self.image = pygame.image.load(path_simple_keyboard_buttons if self.simple_view.data else path_full_keyboard_buttons)
 
-        elif self.controller_type == 'wolf':
-            if keys[ord('r')] and not self.reset_base_svc.called: self.reset_base_svc()
-            elif keys[pygame.K_RETURN] and not self.switch_posture_svc.called: self.switch_posture_svc()
-            elif keys[pygame.K_ESCAPE] and not self.emergency_stop_svc.called: self.emergency_stop_svc()
-            elif keys[ord('g')] and not self.switch_gait_svc.called: self.switch_gait_svc()
-            elif keys[pygame.K_TAB] and not self.push_recovery_svc.called: self.push_recovery_svc()
-            elif keys[pygame.K_RSHIFT] and not self.increase_step_svc.called: self.increase_step_svc()
-            elif keys[pygame.K_LSHIFT] and not self.decrease_step_svc.called: self.decrease_step_svc()
-            elif keys[pygame.K_SPACE] and not self.switch_control_mode_svc.called: self.switch_control_mode_svc()
-
+        # Continuous movement keys
         for k, v in moveBindings.items():
             if keys[ord(k)]:
                 cmd += v
                 key_pressed = True
 
+        # One-time events from keypresses (ESC, service triggers, etc.)
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE and self.emergency_stop:
+                    if self.emergency_stop_type == 'topic':
+                        self.estop_active = not self.estop_active
+                        msg = Bool()
+                        msg.data = self.estop_active
+                        self.emergency_stop_pub.publish(msg)
+                        state_str = "activated" if msg.data else "cleared"
+                        self.get_logger().info(f"Emergency stop {state_str}")
+                    elif self.emergency_stop_type == 'service' and not self.emergency_stop.called:
+                        self.emergency_stop()
+
+                # Handle service key triggers
+                keymap = {
+                    pygame.K_r: 'reset_base_service',
+                    pygame.K_g: 'switch_gait_service',
+                    pygame.K_RETURN: 'switch_posture_service',
+                    pygame.K_TAB: 'push_recovery_service',
+                    pygame.K_RSHIFT: 'increase_step_service',
+                    pygame.K_LSHIFT: 'decrease_step_service',
+                    pygame.K_SPACE: 'switch_control_mode_service'
+                }
+                if event.key in keymap:
+                    svc_key = keymap[event.key]
+                    if svc_key in self.trigger_services and not self.trigger_services[svc_key].called:
+                        self.trigger_services[svc_key]()
+
+            elif event.type == pygame.KEYUP:
+                self.simple_view.reset()
+                for svc in self.trigger_services.values():
+                    svc.reset()
+                if event.key == pygame.K_ESCAPE and self.emergency_stop_type == 'topic':
+                    self.emergency_stop.reset()
+
         if self.stop_without_input and not key_pressed:
-            cmd = np.zeros(6)
-            return  # skip publishing
+            return
 
         cmd[:3] = np.clip(cmd[:3], -1, 1) * self.max_linear
         cmd[3:] = np.clip(cmd[3:], -1, 1) * self.max_angular
 
         twist = Twist()
-        twist.linear.x, twist.linear.y, twist.linear.z = cmd[:3].astype(float)
-        twist.angular.x, twist.angular.y, twist.angular.z = cmd[3:].astype(float)
+        twist.linear.x, twist.linear.y, twist.linear.z = cmd[:3]
+        twist.angular.x, twist.angular.y, twist.angular.z = cmd[3:]
         self.twist_pub.publish(twist)
 
-        for event in pygame.event.get():
-            if event.type == pygame.KEYUP:
-                self.simple_view.reset()
-                if self.controller_type == 'wolf':
-                    for svc in [
-                        self.reset_base_svc, self.switch_posture_svc, self.emergency_stop_svc,
-                        self.switch_gait_svc, self.push_recovery_svc, self.increase_step_svc,
-                        self.decrease_step_svc, self.switch_control_mode_svc
-                    ]:
-                        svc.reset()
         pygame.display.update()
+
 
 def main(args=None):
     rclpy.init(args=args)
-    node = WolfKeyboardController()
+    node = KeyboardController()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
