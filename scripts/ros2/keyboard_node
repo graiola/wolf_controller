@@ -28,7 +28,7 @@ moveBindings = {
 }
 
 class TriggerService:
-    def __init__(self, node, service_name, timeout=5.0):
+    def __init__(self, node, service_name, timeout=15.0):
         self.called = False
         self.node = node
         self.service_name = service_name
