@@ -120,8 +120,8 @@
                 args="joint_state_broadcaster \
                     --namespace $(var robot_name) \
                     --controller-manager controller_manager \
-                    --controller-manager-timeout 20.0 \
-                    --switch-timeout 20.0"/>
+                    --controller-manager-timeout 60.0 \
+                    --switch-timeout 60.0"/>
         </timer>
 
         <timer period="6.0">
@@ -131,8 +131,8 @@
                 args="wolf_controller \
                     --namespace $(var robot_name) \
                     --controller-manager controller_manager \
-                    --controller-manager-timeout 20.0 \
-                    --switch-timeout 20.0"/>
+                    --controller-manager-timeout 60.0 \
+                    --switch-timeout 60.0"/>
         </timer>
 
         <!-- Keyboard node -->
