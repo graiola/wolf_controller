@@ -103,7 +103,7 @@
         </node>
 
         <!-- Convert joint states to TF transforms for rviz, etc -->
-        <node name="robot_state_publisher" pkg="robot_state_publisher" exec="robot_state_publisher" respawn="false" output="log">
+        <node name="robot_state_publisher" pkg="robot_state_publisher" exec="robot_state_publisher" respawn="false" output="screen">
             <remap from="/joint_states"     to="$(var robot_name)/joint_states"/>
             <param name="frame_prefix"      value="$(var robot_name)/"/>
             <param name="robot_description" value="$(command 'xacro $(find-pkg-share $(var robot_model)_description)/robots/$(var robot_model).urdf.xacro 
@@ -111,20 +111,22 @@
         </node>
 
         <node pkg="controller_manager" exec="spawner"
-                name="joint_state_broadcaster_spawner"
-                output="screen"
-                args="joint_state_broadcaster \
+            name="joint_state_broadcaster_spawner" output="screen"
+            args="joint_state_broadcaster
+                    -c /$(var robot_name)/controller_manager
                     --controller-manager-timeout 120.0
                     --switch-timeout 120.0
                     --service-call-timeout 30.0"/>
 
+        <timer period="4.0">
         <node pkg="controller_manager" exec="spawner"
-                name="wolf_controller_spawner"
-                output="screen"
-                args="wolf_controller \
+                name="wolf_controller_spawner" output="screen"
+                args="wolf_controller
+                    -c /$(var robot_name)/controller_manager
                     --controller-manager-timeout 120.0
                     --switch-timeout 120.0
                     --service-call-timeout 30.0"/>
+        </timer>
 
         <!-- Keyboard node -->
         <group if="$(eval '\'$(var input_device)\' == \'keyboard\'')">
