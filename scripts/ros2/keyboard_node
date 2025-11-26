@@ -72,6 +72,7 @@ class KeyboardController(Node):
         self.declare_parameter('max_angular_z', 1.0)
         self.declare_parameter('stop_without_input', False)
         self.declare_parameter('twist_topic', 'wolf_controller/keyboard')
+        self.declare_parameter('service_timeout', 15.0)
 
         # Declare optional service/topic parameters
         service_keys = [
@@ -88,6 +89,7 @@ class KeyboardController(Node):
         self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
         self.stop_without_input = self.get_parameter('stop_without_input').get_parameter_value().bool_value
         twist_topic = self.get_parameter('twist_topic').get_parameter_value().string_value
+        service_timeout = self.get_parameter('service_timeout').get_parameter_value().double_value
 
         self.max_linear = np.array([
             self.get_parameter('max_linear_x').get_parameter_value().double_value,
@@ -119,7 +121,7 @@ class KeyboardController(Node):
         for key in service_keys:
             name = self.get_parameter(key).get_parameter_value().string_value
             if name:
-                self.trigger_services[key] = TriggerService(self, name)
+                self.trigger_services[key] = TriggerService(self, name, service_timeout)
 
         # Emergency stop logic
         estop_topic = self.get_parameter('emergency_stop_topic').get_parameter_value().string_value
