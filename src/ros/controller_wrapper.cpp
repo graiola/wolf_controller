@@ -164,6 +164,18 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
   controller_nh.getParam("regularization", regularization);
   controller_->getIDProblem()->setRegularization(regularization);
 
+  std::string qp_solver = "eiQuadProg";
+  if (!controller_nh.getParam("qp_solver", qp_solver))
+  {
+    ROS_DEBUG_NAMED(CLASS_NAME,"No qp_solver given in namespace %s, using default %s.",
+                    controller_nh.getNamespace().c_str(), qp_solver.c_str());
+  }
+  if(!controller_->getIDProblem()->setSolverByName(qp_solver))
+  {
+    ROS_WARN_NAMED(CLASS_NAME,"Unknown qp_solver '%s'. Keeping default solver.",
+                   qp_solver.c_str());
+  }
+
   double min_forces_weight = 0.0;
   controller_nh.getParam("min_forces_weight", min_forces_weight);
   controller_->getIDProblem()->setForcesMinimizationWeight(min_forces_weight);

@@ -204,6 +204,20 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   controller_node->get_parameter("regularization", regularization);
   controller_->getIDProblem()->setRegularization(regularization);
 
+  std::string qp_solver = "eiQuadProg";
+  if (!controller_node->get_parameter("qp_solver", qp_solver))
+  {
+    RCLCPP_WARN(controller_node->get_logger(),
+                "No qp_solver given in namespace %s, using default %s.",
+                controller_node->get_namespace(), qp_solver.c_str());
+  }
+  if(!controller_->getIDProblem()->setSolverByName(qp_solver))
+  {
+    RCLCPP_WARN(controller_node->get_logger(),
+                "Unknown qp_solver '%s'. Keeping default solver.",
+                qp_solver.c_str());
+  }
+
   double min_forces_weight = 0.0;
   controller_node->get_parameter("min_forces_weight", min_forces_weight);
   controller_->getIDProblem()->setForcesMinimizationWeight(min_forces_weight);
@@ -875,5 +889,4 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
 #endif
 
 }
-
 
