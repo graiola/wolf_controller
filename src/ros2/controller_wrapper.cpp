@@ -433,7 +433,6 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   ddr_server_->registerEnumVariable<std::string>("select_control_mode","WPG",
                                                  boost::bind(&wolf_controller::ControllerCore::selectControlMode,controller_,_1),
                                                  "select mode", {{"Walking pattern generator","WPG"},
-                                                                 {"Model predictive control", "MPC"},
                                                                  {"External references",      "EXT"}
                                                  });
 
@@ -889,4 +888,3 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
 #endif
 
 }
-

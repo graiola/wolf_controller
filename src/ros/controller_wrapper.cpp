@@ -370,7 +370,6 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
   ddr_server_->registerEnumVariable<std::string>("select_control_mode","WPG",
                                                  boost::bind(&wolf_controller::ControllerCore::selectControlMode,controller_,_1),
                                                  "select mode", {{"Walking pattern generator","WPG"},
-                                                                 {"Model predictive control", "MPC"},
                                                                  {"External references",      "EXT"}
                                                  });
 
