@@ -15,18 +15,18 @@
     <!-- Input device argument -->
     <arg name="input_device" default="keyboard"    description="[ps3/xbox/keyboard/spacemouse]"/>
 
-    <!-- Gazebo related arguments -->
-    <arg name="gazebo"        default="true"     description="start gazebo"/>
-    <arg name="gazebo_debug"  default="false"    description="activate gazebo debug"/>
-    <arg name="engine"        default="ode"      description="[ode/bullet/dart/simbody]"/>
-    <arg name="spawn_robot"   default="true"     description="spawn the robot in gazebo"/>
+    <!-- Gazebo Sim (Ignition/Fortress) related arguments -->
+    <arg name="gazebo"        default="true"     description="start Gazebo Sim"/>
+    <arg name="gazebo_debug"  default="false"    description="increase Gazebo Sim log verbosity"/>
+    <arg name="engine"        default="ode"      description="kept for compatibility (ignored by Ignition launcher)"/>
+    <arg name="spawn_robot"   default="true"     description="spawn the robot in Gazebo Sim"/>
     <arg name="initial_xyz"   default="[0,0,0]"  description="initial robot xyz position in the world"/>
     <arg name="initial_rpy"   default="[0,0,0]"  description="initial robot rpy position in the world"/>
     <arg name="world_name"    default="empty"    description="load a specific world from wolf_gazebo_resources"/>
     <arg name="world_file"    default="$(find-pkg-share wolf_gazebo_resources)/worlds/$(var world_name).world" description="load a specific world file"/>
 
     <!-- GUI related arguments -->
-    <arg name="gazebo_gui"      default="true"  description="start gzclient"/>
+    <arg name="gazebo_gui"      default="true"  description="start Gazebo Sim GUI"/>
     <arg name="plotjuggler_gui" default="false" description="start plotjuggler"/>
     <arg name="rviz_gui"        default="false" description="start rviz"/>
     <arg name="rqt_gui"         default="true"  description="start rqt_reconfigure"/>
@@ -67,7 +67,7 @@
             </include>
         </group>
 
-        <!-- Load the robot description and Gazebo -->
+        <!-- Load the robot description and Gazebo Sim -->
         <group if="$(var gazebo)">
             <include file="$(find-pkg-share wolf_description_utils)/launch/world.launch.xml">
                 <arg name="sensors"           value="$(var sensors)" />
@@ -80,6 +80,7 @@
                 <arg name="arm_name"          value="$(var arm_name)"/>
                 <arg name="debug"             value="$(var gazebo_debug)"/>
                 <arg name="engine"            value="$(var engine)"/>
+                <arg name="simulator"         value="ignition"/>
             </include>
         </group>
         <group unless="$(var gazebo)">
@@ -89,44 +90,70 @@
             <arg name="robot_name"   value="$(var robot_name)" />
             <arg name="arm_name"     value="$(var arm_name)"/>
             <arg name="period"       value="$(var period)" />
+            <arg name="simulator"    value="ignition" />
             </include>
         </group>
 
-        <!-- Spawn the robot in Gazebo -->
-        <node pkg="wolf_description_utils" exec="go0" name="spawn_robot" output="screen" if="$(var spawn_robot)">
-            <param name="robot_model"              value="$(var robot_model)"/>
-            <param name="robot_name"               value="$(var robot_name)"/>
-            <param name="description"              value="$(var robot_name)/gazebo_robot_description/description"/>
-            <param name="semantic_description"     value="$(var robot_name)/robot_description_semantic/description"/>
-            <param name="initial_xyz"              value="$(var initial_xyz)"/>
-            <param name="initial_rpy"              value="$(var initial_rpy)"/>
-        </node>
+        <!-- Spawn the robot in Gazebo Sim -->
+        <group if="$(var gazebo)">
+            <node pkg="wolf_description_utils" exec="go0" name="spawn_robot" output="screen" if="$(var spawn_robot)">
+                <param name="robot_model"              value="$(var robot_model)"/>
+                <param name="robot_name"               value="$(var robot_name)"/>
+                <param name="description"              value="$(var robot_name)/gazebo_robot_description/description"/>
+                <param name="semantic_description"     value="$(var robot_name)/robot_description_semantic/description"/>
+                <param name="initial_xyz"              value="$(var initial_xyz)"/>
+                <param name="initial_rpy"              value="$(var initial_rpy)"/>
+                <param name="world_file"               value="$(var world_file)"/>
+            </node>
+        </group>
 
         <!-- Convert joint states to TF transforms for rviz, etc -->
         <node name="robot_state_publisher" pkg="robot_state_publisher" exec="robot_state_publisher" respawn="false" output="screen">
             <remap from="/joint_states"     to="$(var robot_name)/joint_states"/>
             <param name="frame_prefix"      value="$(var robot_name)/"/>
             <param name="robot_description" value="$(command 'xacro $(find-pkg-share $(var robot_model)_description)/robots/$(var robot_model).urdf.xacro 
-            sensors:=$(var sensors) period:=$(var period) arm_name:=$(var arm_name) robot_name:=$(var robot_name)')"/>
+            sensors:=$(var sensors) period:=$(var period) arm_name:=$(var arm_name) robot_name:=$(var robot_name) simulator:=ignition')"/>
         </node>
 
-        <node pkg="controller_manager" exec="spawner"
-            name="joint_state_broadcaster_spawner" output="screen"
-            args="joint_state_broadcaster
-                    -c /$(var robot_name)/controller_manager
-                    --controller-manager-timeout 120.0
-                    --switch-timeout 120.0
-                    --service-call-timeout 30.0"/>
+        <group if="$(eval '\'$(var robot_name)\' == \'\'')">
+            <node pkg="controller_manager" exec="spawner"
+                name="joint_state_broadcaster_spawner" output="screen"
+                args="joint_state_broadcaster
+                        -c /controller_manager
+                        --controller-manager-timeout 120.0
+                        --switch-timeout 120.0
+                        --service-call-timeout 30.0"/>
 
-        <timer period="4.0">
-        <node pkg="controller_manager" exec="spawner"
-                name="wolf_controller_spawner" output="screen"
-                args="wolf_controller
-                    -c /$(var robot_name)/controller_manager
-                    --controller-manager-timeout 120.0
-                    --switch-timeout 120.0
-                    --service-call-timeout 30.0"/>
-        </timer>
+            <timer period="4.0">
+            <node pkg="controller_manager" exec="spawner"
+                    name="wolf_controller_spawner" output="screen"
+                    args="wolf_controller
+                        -c /controller_manager
+                        --controller-manager-timeout 120.0
+                        --switch-timeout 120.0
+                        --service-call-timeout 30.0"/>
+            </timer>
+        </group>
+
+        <group if="$(eval '\'$(var robot_name)\' != \'\'')">
+            <node pkg="controller_manager" exec="spawner"
+                name="joint_state_broadcaster_spawner" output="screen"
+                args="joint_state_broadcaster
+                        -c /$(var robot_name)/controller_manager
+                        --controller-manager-timeout 120.0
+                        --switch-timeout 120.0
+                        --service-call-timeout 30.0"/>
+
+            <timer period="4.0">
+            <node pkg="controller_manager" exec="spawner"
+                    name="wolf_controller_spawner" output="screen"
+                    args="wolf_controller
+                        -c /$(var robot_name)/controller_manager
+                        --controller-manager-timeout 120.0
+                        --switch-timeout 120.0
+                        --service-call-timeout 30.0"/>
+            </timer>
+        </group>
 
         <!-- Keyboard node -->
         <group if="$(eval '\'$(var input_device)\' == \'keyboard\'')">
