@@ -10,6 +10,7 @@
 #include <wolf_controller_core/state_machine.h>
 
 // System
+#include <cmath>
 #include <functional>
 
 
@@ -304,9 +305,9 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
                   wolf_controller::_joints_prefix[i].c_str(), controller_node->get_namespace());
       Kd_leg_i = 1.0;
     }
-    // Check if the values are positive
-    if (Kp_leg_i < 0.0 || Kd_leg_i < 0.0) {
-      RCLCPP_WARN(controller_node->get_logger(), "Kp_leg and Kd_leg gains must be positive!");
+    // Keep ROS1 behavior: invalid gains (missing/NaN/Inf/negative) fall back to 1.0.
+    if (!std::isfinite(Kp_leg_i) || !std::isfinite(Kd_leg_i) || Kp_leg_i < 0.0 || Kd_leg_i < 0.0) {
+      RCLCPP_WARN(controller_node->get_logger(), "Kp_leg and Kd_leg gains must be finite and non-negative.");
       Kp_leg_i = Kd_leg_i = 1.0;
     }
     Kp_leg(i) = Kp_leg_i;
@@ -333,9 +334,9 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
                       std::to_string(i).c_str(), controller_node->get_namespace());
           Kd_arm_i = 1.0;
         }
-        // Check if the values are positive
-        if (Kp_arm_i < 0.0 || Kd_arm_i < 0.0) {
-          RCLCPP_WARN(controller_node->get_logger(), "Kp_arm and Kd_arm gains must be positive!");
+        // Keep ROS1 behavior: invalid gains (missing/NaN/Inf/negative) fall back to 1.0.
+        if (!std::isfinite(Kp_arm_i) || !std::isfinite(Kd_arm_i) || Kp_arm_i < 0.0 || Kd_arm_i < 0.0) {
+          RCLCPP_WARN(controller_node->get_logger(), "Kp_arm and Kd_arm gains must be finite and non-negative.");
           Kp_arm_i = Kd_arm_i = 1.0;
         }
         Kp_arm(i) = Kp_arm_i;

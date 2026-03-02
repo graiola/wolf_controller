@@ -94,28 +94,50 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     auto_declare<double>("gains.Kd_leg.kfe",       NAN);
 
     std::vector<std::string> cartesian_tasks = {"lf_foot", "rf_foot", "lh_foot", "rh_foot", "waist"};
+    for(const auto& cart_task : cartesian_tasks)
+    {
+      auto_declare<double>("gains."+cart_task+".lambda1", NAN);
+      auto_declare<double>("gains."+cart_task+".lambda2", NAN);
+      auto_declare<double>("gains."+cart_task+".weight",  NAN);
 
-    for(unsigned int j = 0; j < cartesian_tasks.size(); j++)
-      for (unsigned int i = 0; i < wolf_controller_utils::_cartesian_names.size(); i++)
+      for(const auto& axis_name : wolf_controller_utils::_cartesian_names)
       {
-        auto_declare<double>("gains."+cartesian_tasks[j]+".Kp."+wolf_controller_utils::_cartesian_names[i], NAN);
-        auto_declare<double>("gains."+cartesian_tasks[j]+".Kd."+wolf_controller_utils::_cartesian_names[i], NAN);
-        auto_declare<double>("gains."+cartesian_tasks[j]+".weight",  NAN);
-        //auto_declare<double>("gains."+cartesian_tasks[j]+".lambda1", NAN);
-        //auto_declare<double>("gains."+cartesian_tasks[j]+".lambda2", NAN);
+        auto_declare<double>("gains."+cart_task+".Kp."+axis_name, NAN);
+        auto_declare<double>("gains."+cart_task+".Kd."+axis_name, NAN);
       }
+    }
 
-    // Gains for the center of mass (CoM)
-    auto_declare<double>("gains.CoM.Kp.x",         NAN);
-    auto_declare<double>("gains.CoM.Kp.y",         NAN);
-    auto_declare<double>("gains.CoM.Kp.z",         NAN);
-    auto_declare<double>("gains.CoM.Kd.x",         NAN);
-    auto_declare<double>("gains.CoM.Kd.y",         NAN);
-    auto_declare<double>("gains.CoM.Kd.z",         NAN);
-    auto_declare<double>("gains.CoM.weight",       NAN);
+    const std::vector<std::string> wrench_tasks = {"lf_foot_wrench", "rf_foot_wrench", "lh_foot_wrench", "rh_foot_wrench"};
+    for(const auto& wrench_task : wrench_tasks)
+    {
+      auto_declare<double>("gains."+wrench_task+".lambda1", NAN);
+      auto_declare<double>("gains."+wrench_task+".weight",  NAN);
+    }
+
+    // Gains for center of mass. Keep both "com" and "CoM" for backward compatibility.
+    for(const auto& com_task_name : std::vector<std::string>{"com", "CoM"})
+    {
+      auto_declare<double>("gains."+com_task_name+".lambda1", NAN);
+      auto_declare<double>("gains."+com_task_name+".lambda2", NAN);
+      auto_declare<double>("gains."+com_task_name+".Kp.x",    NAN);
+      auto_declare<double>("gains."+com_task_name+".Kp.y",    NAN);
+      auto_declare<double>("gains."+com_task_name+".Kp.z",    NAN);
+      auto_declare<double>("gains."+com_task_name+".Kd.x",    NAN);
+      auto_declare<double>("gains."+com_task_name+".Kd.y",    NAN);
+      auto_declare<double>("gains."+com_task_name+".Kd.z",    NAN);
+      auto_declare<double>("gains."+com_task_name+".weight",  NAN);
+    }
+
+    auto_declare<double>("gains.postural.lambda1", NAN);
+    auto_declare<double>("gains.postural.lambda2", NAN);
+    auto_declare<double>("gains.postural.weight",  NAN);
 
     // Gains for angular momentum
-    auto_declare<double>("gains.angular_momentum.weight", 0.0);
+    auto_declare<double>("gains.angular_momentum.lambda1", NAN);
+    auto_declare<double>("gains.angular_momentum.K.roll",  NAN);
+    auto_declare<double>("gains.angular_momentum.K.pitch", NAN);
+    auto_declare<double>("gains.angular_momentum.K.yaw",   NAN);
+    auto_declare<double>("gains.angular_momentum.weight",  NAN);
 
   }
   catch (const std::exception & e)
