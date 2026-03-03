@@ -78,6 +78,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     auto_declare<std::string>("imu_sensor_name", "");
     auto_declare<std::string>("input_device",    "");
     auto_declare<bool>("use_contact_sensors", false);
+    auto_declare<bool>("use_effort_command_for_estimation", false);
     auto_declare<bool>("publish_odom_tf",     false);
     auto_declare<bool>("publish_odom_msg",    false);
     auto_declare<std::string>("odom_topic",   "odometry/robot");
@@ -204,6 +205,8 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
   imu_name_           = get_node()->get_parameter("imu_sensor_name").as_string();
   input_device        = get_node()->get_parameter("input_device").as_string();
   use_contact_sensors = get_node()->get_parameter("use_contact_sensors").as_bool();
+  use_effort_command_for_estimation_ =
+    get_node()->get_parameter("use_effort_command_for_estimation").as_bool();
   publish_odom_tf_    = get_node()->get_parameter("publish_odom_tf").as_bool();
   publish_odom_msg_   = get_node()->get_parameter("publish_odom_msg").as_bool();
   odom_topic_         = get_node()->get_parameter("odom_topic").as_string();
@@ -354,10 +357,14 @@ void WolfController::readJoints()
 {
   for (unsigned int i = 0; i < joint_handles_.size(); i++)
   {
+    double effort_for_estimation = joint_handles_[i].effort_state_.get().get_value();
+    if (use_effort_command_for_estimation_)
+      effort_for_estimation = joint_handles_[i].effort_command_.get().get_value();
+
     controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_handles_[i].position_state_.get().get_value());
     controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_handles_[i].velocity_state_.get().get_value());
     controller_->setJointAcceleration(i+FLOATING_BASE_DOFS,0.0); // FIXME
-    controller_->setJointEffort(i+FLOATING_BASE_DOFS,joint_handles_[i].effort_state_.get().get_value());
+    controller_->setJointEffort(i+FLOATING_BASE_DOFS,effort_for_estimation);
   }
 }
 

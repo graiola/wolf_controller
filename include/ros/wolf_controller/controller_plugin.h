@@ -125,6 +125,8 @@ private:
   ControllerRosWrapper::Ptr ros_wrapper_;
   /** @brief True if the controller uses the external contact sensors */
   bool use_contact_sensors_;
+  /** @brief If true, use last effort command as effort state for estimation. */
+  bool use_effort_command_for_estimation_;
   /** @brief True if the controller is stopping */
   std::atomic<bool> stopping_;
   /** @brief Publish odom tf */

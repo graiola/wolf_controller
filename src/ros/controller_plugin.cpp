@@ -35,6 +35,7 @@ WolfController::WolfController()
    hardware_interface::ImuSensorInterface,
    hardware_interface::GroundTruthInterface,
    hardware_interface::ContactSwitchSensorInterface> (true) // allow_optional_interfaces = true
+  ,use_effort_command_for_estimation_(false)
   ,stopping_(false)
   ,publish_odom_tf_(false)
   ,publish_odom_msg_(false)
@@ -163,6 +164,10 @@ bool WolfController::init(hardware_interface::RobotHW* robot_hw,
 
   use_contact_sensors_ = false;
   controller_nh.getParam("use_contact_sensors",use_contact_sensors_);
+  use_effort_command_for_estimation_ = false;
+  controller_nh.getParam(
+    "use_effort_command_for_estimation",
+    use_effort_command_for_estimation_);
   if(use_contact_sensors_)
   {
     if(!cs_hw)
@@ -225,10 +230,14 @@ void WolfController::readJoints()
 {
   for (unsigned int i = 0; i < joint_states_.size(); i++)
   {
+    double effort_for_estimation = joint_states_[i].getEffort();
+    if(use_effort_command_for_estimation_)
+      effort_for_estimation = joint_states_[i].getCommand();
+
     controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_states_[i].getPosition());
     controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_states_[i].getVelocity());
     controller_->setJointAcceleration(i+FLOATING_BASE_DOFS,0.0); // FIXME
-    controller_->setJointEffort(i+FLOATING_BASE_DOFS,joint_states_[i].getEffort());
+    controller_->setJointEffort(i+FLOATING_BASE_DOFS,effort_for_estimation);
   }
 }
 
