@@ -392,12 +392,12 @@ int main(int argc, char **argv)
 
   auto node = std::make_shared<rclcpp::Node>("wolf_controller");
 
-  auto cfv = std::make_shared<wolf_controller::ContactForcesVisualizer>(node, "contact_forces");
-  auto comv = std::make_shared<wolf_controller::CoMVisualizer>(node, "CoM");
-  auto fhv = std::make_shared<wolf_controller::FootHoldsVisualizer>(node, "foot_holds");
-  auto tev = std::make_shared<wolf_controller::TerrainEstimationVisualizer>(node, "terrain_estimation");
-  auto fcv = std::make_shared<wolf_controller::FrictionConesVisualizer>(node, "friction_cones");
-  auto cpv = std::make_shared<wolf_controller::CapturePointVisualizer>(node, "capture_point");
+  auto cfv = std::make_shared<wolf_controller::ContactForcesVisualizer>(node, "wolf_controller/contact_forces");
+  auto comv = std::make_shared<wolf_controller::CoMVisualizer>(node, "wolf_controller/CoM");
+  auto fhv = std::make_shared<wolf_controller::FootHoldsVisualizer>(node, "wolf_controller/foot_holds");
+  auto tev = std::make_shared<wolf_controller::TerrainEstimationVisualizer>(node, "wolf_controller/terrain_estimation");
+  auto fcv = std::make_shared<wolf_controller::FrictionConesVisualizer>(node, "wolf_controller/friction_cones");
+  auto cpv = std::make_shared<wolf_controller::CapturePointVisualizer>(node, "wolf_controller/capture_point");
 
   rclcpp::spin(node);
   rclcpp::shutdown();

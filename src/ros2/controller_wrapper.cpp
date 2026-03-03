@@ -349,7 +349,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   // Real-time publishers
   // Contact forces
   unsigned int n_contacts = controller_->getRobotModel()->getContactNames().size();
-  auto contact_forces_pub = controller_node->create_publisher<wolf_msgs::msg::ContactForces>("contact_forces", rclcpp::QoS(4));
+  auto contact_forces_pub = controller_node->create_publisher<wolf_msgs::msg::ContactForces>("wolf_controller/contact_forces", rclcpp::QoS(4));
   contact_forces_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::ContactForces>>(contact_forces_pub);
   contact_forces_pub_->msg_.header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
   contact_forces_pub_->msg_.name.resize(n_contacts);
@@ -361,7 +361,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
 
   // Foot holds
   unsigned int n_feet = controller_->getRobotModel()->getNumberLegs();
-  auto foot_holds_pub = controller_node->create_publisher<wolf_msgs::msg::FootHolds>("foot_holds", rclcpp::QoS(4));
+  auto foot_holds_pub = controller_node->create_publisher<wolf_msgs::msg::FootHolds>("wolf_controller/foot_holds", rclcpp::QoS(4));
   foot_holds_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::FootHolds>>(foot_holds_pub);
   foot_holds_pub_->msg_.header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
   foot_holds_pub_->msg_.name.resize(n_feet);
@@ -369,12 +369,12 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   foot_holds_pub_->msg_.virtual_foothold.resize(n_feet);
 
   // Terrain estimation
-  auto terrain_estimation_pub = controller_node->create_publisher<wolf_msgs::msg::TerrainEstimation>("terrain_estimation", rclcpp::QoS(4));
+  auto terrain_estimation_pub = controller_node->create_publisher<wolf_msgs::msg::TerrainEstimation>("wolf_controller/terrain_estimation", rclcpp::QoS(4));
   terrain_estimation_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::TerrainEstimation>>(terrain_estimation_pub);
   terrain_estimation_pub_->msg_.header.frame_id = WORLD_FRAME_NAME;
 
   // Friction cones
-  auto friction_cones_pub = controller_node->create_publisher<wolf_msgs::msg::FrictionCones>("friction_cones", rclcpp::QoS(4));
+  auto friction_cones_pub = controller_node->create_publisher<wolf_msgs::msg::FrictionCones>("wolf_controller/friction_cones", rclcpp::QoS(4));
   friction_cones_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::FrictionCones>>(friction_cones_pub);
   friction_cones_pub_->msg_.header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
   friction_cones_pub_->msg_.foot_positions.resize(n_feet);
@@ -382,13 +382,13 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   friction_cones_pub_->msg_.mus.resize(n_feet);
 
   // Capture point
-  auto capture_point_pub = controller_node->create_publisher<wolf_msgs::msg::CapturePoint>("capture_point", rclcpp::QoS(4));
+  auto capture_point_pub = controller_node->create_publisher<wolf_msgs::msg::CapturePoint>("wolf_controller/capture_point", rclcpp::QoS(4));
   capture_point_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::CapturePoint>>(capture_point_pub);
   capture_point_pub_->msg_.header.frame_id = WORLD_FRAME_NAME;
   capture_point_pub_->msg_.support_polygon.points.resize(N_LEGS);
 
   // Controller state
-  auto controller_state_pub = controller_node->create_publisher<wolf_msgs::msg::ControllerState>("controller_state", rclcpp::QoS(4));
+  auto controller_state_pub = controller_node->create_publisher<wolf_msgs::msg::ControllerState>("wolf_controller/controller_state", rclcpp::QoS(4));
   controller_state_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::ControllerState>>(controller_state_pub);
   controller_state_pub_->msg_.states = controller_->getStateMachine()->getStatesAsString();
   controller_state_pub_->msg_.current_state = controller_->getStateMachine()->getStateAsString();
@@ -398,7 +398,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
 
 #ifdef OCS2
   // OCS2 MPC observation
-  auto mpc_observation_pub_ = controller_node->create_publisher<ocs2_msgs::msg::MpcObservation>("mpc_observation", rclcpp::QoS(4));
+  auto mpc_observation_pub_ = controller_node->create_publisher<ocs2_msgs::msg::MpcObservation>("wolf_controller/mpc_observation", rclcpp::QoS(4));
   auto mpc_observation_msg = std::make_shared<ocs2_msgs::msg::MpcObservation>();
   mpc_observation_msg->state.value.resize(24);
   mpc_observation_msg->input.value.resize(48);

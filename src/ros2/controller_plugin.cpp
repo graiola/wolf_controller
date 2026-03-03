@@ -81,7 +81,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     auto_declare<bool>("use_effort_command_for_estimation", false);
     auto_declare<bool>("publish_odom_tf",     false);
     auto_declare<bool>("publish_odom_msg",    false);
-    auto_declare<std::string>("odom_topic",   "odometry/robot");
+    auto_declare<std::string>("odom_topic",   "wolf_controller/odometry/robot");
 
     // Gains parameters
     // Leg proportional gains (Kp_leg)
@@ -198,10 +198,13 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
 
   // configure
   period_             = get_node()->get_parameter("period").as_double();
-  robot_name_         = get_string_parameter_from_remote_node("robot_description/robot_name");
+  std::string ns = get_node()->get_namespace();
+  if (ns == "/")
+    ns.clear();
+  robot_name_         = get_string_parameter_from_remote_node(ns + "/robot_description/robot_name");
   tf_prefix_          = get_node()->get_parameter("tf_prefix").as_string();
-  urdf                = get_string_parameter_from_remote_node("robot_description/description");
-  srdf                = get_string_parameter_from_remote_node("robot_description_semantic/description");
+  urdf                = get_string_parameter_from_remote_node(ns + "/robot_description/description");
+  srdf                = get_string_parameter_from_remote_node(ns + "/robot_description_semantic/description");
   imu_name_           = get_node()->get_parameter("imu_sensor_name").as_string();
   input_device        = get_node()->get_parameter("input_device").as_string();
   use_contact_sensors = get_node()->get_parameter("use_contact_sensors").as_bool();
