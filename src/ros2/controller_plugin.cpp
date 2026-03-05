@@ -465,7 +465,6 @@ void WolfController::odomPublisher()
   double estimated_z;
   Eigen::Matrix3d tmp_R;
 
-  rclcpp::Time t_prev = get_node()->get_clock()->now();
   auto br = std::make_shared<tf2_ros::TransformBroadcaster>(get_node());
   nav_msgs::msg::Odometry odom_msg;
   geometry_msgs::msg::TransformStamped basefoot_T_world_msg;
@@ -488,17 +487,59 @@ void WolfController::odomPublisher()
 
   auto state_estimator = controller_->getStateEstimator();
   auto robot_model = controller_->getRobotModel();
+  std::string base_link_frame = robot_model->getBaseLinkName();
+  if (base_link_frame.empty() || base_link_frame == WORLD_FRAME_NAME)
+  {
+    RCLCPP_WARN(
+      get_node()->get_logger(),
+      "Unexpected base link frame '%s', forcing fallback to 'base_link'",
+      base_link_frame.c_str());
+    base_link_frame = "base_link";
+  }
+  RCLCPP_INFO(
+    get_node()->get_logger(),
+    "TF frames: odom='%s%s' base_footprint='%s%s' base='%s%s' world='%s%s' base_stabilized='%s%s'",
+    tf_prefix_.c_str(), ODOM_FRAME,
+    tf_prefix_.c_str(), BASE_FOOTPRINT_FRAME,
+    tf_prefix_.c_str(), base_link_frame.c_str(),
+    tf_prefix_.c_str(), WORLD_FRAME_NAME,
+    tf_prefix_.c_str(), BASE_STABILIZED_FRAME);
+
+  // Keep last valid transforms to avoid TF chain breaks when estimator outputs non-finite data.
+  Eigen::Affine3d last_world_T_base = Eigen::Affine3d::Identity();
+  Eigen::Affine3d last_basefoot_T_base = Eigen::Affine3d::Identity();
+  Eigen::Affine3d last_odom_T_base = Eigen::Affine3d::Identity();
 
   while (!stopping_) //  && get_current_state().label() == "active"
   {
     rclcpp::Time t = get_node()->get_clock()->now();
-    // Keep stamps monotonic even if ROS time is paused / not advancing.
-    if (t <= t_prev)
-      t = t_prev + rclcpp::Duration::from_seconds(1.0 / odom_pub_rate_);
+    if (t.nanoseconds() == 0)
+    {
+      RCLCPP_WARN_THROTTLE(
+        get_node()->get_logger(),
+        *get_node()->get_clock(),
+        2000,
+        "ROS time is zero. Waiting for /clock before publishing odom TF");
+      publishing_rate.sleep();
+      continue;
+    }
 
     // Get base wrt the ground truth
     world_T_base.translation() = state_estimator->getGroundTruthBasePosition();
     world_T_base.linear() = state_estimator->getGroundTruthBaseOrientation().toRotationMatrix();
+    if (!world_T_base.matrix().allFinite())
+    {
+      RCLCPP_WARN_THROTTLE(
+        get_node()->get_logger(),
+        *get_node()->get_clock(),
+        2000,
+        "Skipping non-finite world_T_base estimate; reusing last valid transform");
+      world_T_base = last_world_T_base;
+    }
+    else
+    {
+      last_world_T_base = world_T_base;
+    }
 
     // Get the estimated z of the base
     estimated_z = state_estimator->getBaseHeightInBasefoot();
@@ -524,12 +565,25 @@ void WolfController::odomPublisher()
     basefoot_T_base.translation().x() = 0.0;
     basefoot_T_base.translation().y() = 0.0;
     basefoot_T_base.translation().z() = estimated_z;
+    if (!basefoot_T_base.matrix().allFinite())
+    {
+      RCLCPP_WARN_THROTTLE(
+        get_node()->get_logger(),
+        *get_node()->get_clock(),
+        2000,
+        "Skipping non-finite basefoot_T_base estimate; reusing last valid transform");
+      basefoot_T_base = last_basefoot_T_base;
+    }
+    else
+    {
+      last_basefoot_T_base = basefoot_T_base;
+    }
 
     // Set coordinates
     basefoot_T_base_msg = tf2::eigenToTransform(basefoot_T_base);
     // Set transform header
     basefoot_T_base_msg.header.frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
-    basefoot_T_base_msg.child_frame_id = tf_prefix_ + robot_model->getBaseLinkName();
+    basefoot_T_base_msg.child_frame_id = tf_prefix_ + base_link_frame;
     basefoot_T_base_msg.header.stamp = t;
     br->sendTransform(basefoot_T_base_msg);
 
@@ -542,7 +596,7 @@ void WolfController::odomPublisher()
     // Set coordinates
     base_T_stabilized_msg = tf2::eigenToTransform(base_T_stabilized);
     // Set transform header
-    base_T_stabilized_msg.header.frame_id = tf_prefix_ + robot_model->getBaseLinkName();
+    base_T_stabilized_msg.header.frame_id = tf_prefix_ + base_link_frame;
     base_T_stabilized_msg.child_frame_id = tf_prefix_ + BASE_STABILIZED_FRAME;
     base_T_stabilized_msg.header.stamp = t;
     br->sendTransform(base_T_stabilized_msg);
@@ -550,6 +604,19 @@ void WolfController::odomPublisher()
     if (publish_odom_msg_ || publish_odom_tf_)
     {
       odom_T_base = state_estimator->getFloatingBasePose();
+      if (!odom_T_base.matrix().allFinite())
+      {
+        RCLCPP_WARN_THROTTLE(
+          get_node()->get_logger(),
+          *get_node()->get_clock(),
+          2000,
+          "Skipping non-finite odom_T_base estimate; reusing last valid transform");
+        odom_T_base = last_odom_T_base;
+      }
+      else
+      {
+        last_odom_T_base = odom_T_base;
+      }
       odom_T_basefoot = odom_T_base * basefoot_T_base.inverse();
 
       // Set coordinates
@@ -579,8 +646,6 @@ void WolfController::odomPublisher()
       if (publish_odom_msg_)
         odom_pub->publish(odom_msg);
     }
-
-    t_prev = t;
 
     publishing_rate.sleep();
   }
