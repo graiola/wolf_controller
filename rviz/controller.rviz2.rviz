@@ -178,7 +178,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /friction_cones_visual_marker
+        Value: wolf_controller/friction_cones_visual_marker
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
@@ -190,7 +190,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /contact_forces_visual_marker
+        Value: wolf_controller/contact_forces_visual_marker
       Value: true
     - Class: rviz_default_plugins/TF
       Enabled: true

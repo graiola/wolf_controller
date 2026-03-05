@@ -18,6 +18,7 @@
 #include <rviz_visual_tools/rviz_visual_tools.hpp>
 #include <Eigen/Dense>
 #include <mutex>
+#include <builtin_interfaces/msg/time.hpp>
 
 namespace rviz_visual_tools {
 
@@ -40,7 +41,8 @@ public:
     Eigen::Vector3d tail_end = origin + normal * height;
 
     // Set the frame ID and timestamp.
-    arrow_marker_.header.stamp = node_->now();
+    // Use zero timestamp so RViz always uses the latest available TF and avoids future extrapolation.
+    arrow_marker_.header.stamp = builtin_interfaces::msg::Time();
     arrow_marker_.header.frame_id = base_frame_;
     arrow_marker_.type = visualization_msgs::msg::Marker::ARROW;
     arrow_marker_.action = visualization_msgs::msg::Marker::ADD;
@@ -69,6 +71,16 @@ public:
     // Helper for publishing rviz markers
     return publishMarker(arrow_marker_);
   }
+
+  bool trigger()
+  {
+    // Force markers to use latest TF transform (stamp=0) to avoid timing races with TF publishers.
+    for (auto& marker : markers_.markers)
+    {
+      marker.header.stamp = builtin_interfaces::msg::Time();
+    }
+    return RvizVisualTools::trigger();
+  }
 };
 
 } // namespace rviz_visual_tools
@@ -86,7 +98,11 @@ public:
   {
     subscriber_ = node_->create_subscription<MsgT>(
           topic_name, 10, std::bind(&Visualizer::callback, this, std::placeholders::_1));
-    visual_tools_ = std::make_shared<rviz_visual_tools::VisualTools>(base_frame, topic_name + "_visual_marker", node_);
+    std::string marker_topic = topic_name;
+    if (!marker_topic.empty() && marker_topic.front() == '/')
+      marker_topic.erase(0, 1);
+    marker_topic += "_visual_marker";
+    visual_tools_ = std::make_shared<rviz_visual_tools::VisualTools>(base_frame, marker_topic, node_);
   }
 
 protected:
@@ -106,7 +122,6 @@ protected:
     pose_.translation().y() = position.y;
     pose_.translation().z() = position.z;
     visual_tools_->publishCone(pose_, angle, rviz_visual_tools::Colors::LIME_GREEN, 0.05);
-    visual_tools_->trigger();
   }
 
   void createFrictionCone(const geometry_msgs::msg::Vector3& normal, const geometry_msgs::msg::Vector3& position, double friction_coeff)
@@ -123,7 +138,6 @@ protected:
     pose_.translation().y() = position.y;
     pose_.translation().z() = position.z;
     visual_tools_->publishFrictionCone(pose_.translation(), 0.05, vector_, friction_coeff, rviz_visual_tools::Colors::LIME_GREEN);
-    visual_tools_->trigger();
   }
 
   void createPlane(const geometry_msgs::msg::Vector3& normal, const geometry_msgs::msg::Vector3& position)
@@ -140,7 +154,6 @@ protected:
     pose_.translation().y() = position.y;
     pose_.translation().z() = position.z;
     visual_tools_->publishYZPlane(pose_);
-    visual_tools_->trigger();
   }
 
   void createArrow(const geometry_msgs::msg::Vector3& vector, const geometry_msgs::msg::Vector3& origin, rviz_visual_tools::Colors color, double scale = 500.0)
@@ -157,7 +170,6 @@ protected:
     pose_.translation().y() = origin.y;
     pose_.translation().z() = origin.z;
     visual_tools_->publishArrow(pose_, color, rviz_visual_tools::LARGE, norm_ / scale);
-    visual_tools_->trigger();
   }
 
   void createArrow(const geometry_msgs::msg::Vector3& vector, const geometry_msgs::msg::Point& origin, rviz_visual_tools::Colors color, double scale = 500.0)
@@ -174,13 +186,11 @@ protected:
     pose_.translation().y() = origin.y;
     pose_.translation().z() = origin.z;
     visual_tools_->publishArrow(pose_, color, rviz_visual_tools::LARGE, norm_ / scale);
-    visual_tools_->trigger();
   }
 
   void createPolygon(const geometry_msgs::msg::Polygon& poly, rviz_visual_tools::Colors color)
   {
     visual_tools_->publishPolygon(poly, color, rviz_visual_tools::LARGE);
-    visual_tools_->trigger();
   }
 
   void createSphere(const geometry_msgs::msg::Point& origin, rviz_visual_tools::Colors color)
@@ -191,7 +201,6 @@ protected:
     pose_.translation().y() = origin.y;
     pose_.translation().z() = origin.z;
     visual_tools_->publishSphere(pose_, color, rviz_visual_tools::XXLARGE);
-    visual_tools_->trigger();
   }
 
   void createSphere(const geometry_msgs::msg::Vector3& origin, rviz_visual_tools::Colors color)
@@ -202,7 +211,6 @@ protected:
     pose_.translation().y() = origin.y;
     pose_.translation().z() = origin.z;
     visual_tools_->publishSphere(pose_, color, rviz_visual_tools::XXLARGE);
-    visual_tools_->trigger();
   }
 
   rclcpp::Node::SharedPtr node_;
@@ -234,15 +242,16 @@ public:
 protected:
   void callback(const wolf_msgs::msg::FrictionCones::SharedPtr msg) override
   {
-    if(cnt_++ % decimate_ == 0 && _mtx.try_lock())
+    if(cnt_++ % decimate_ == 0)
     {
+      std::lock_guard<std::mutex> lock(_mtx);
       visual_tools_->deleteAllMarkers();
       visual_tools_->setBaseFrame(msg->header.frame_id);
       for (unsigned int i = 0; i < msg->foot_positions.size(); ++i)
       {
         createFrictionCone(msg->cone_axis[i], msg->foot_positions[i], static_cast<double>(msg->mus[i].data));
       }
-      _mtx.unlock();
+      visual_tools_->trigger();
     }
   }
 };
@@ -263,13 +272,14 @@ public:
 protected:
   void callback(const wolf_msgs::msg::TerrainEstimation::SharedPtr msg) override
   {
-    if(cnt_++ % decimate_ == 0 && _mtx.try_lock())
+    if(cnt_++ % decimate_ == 0)
     {
+      std::lock_guard<std::mutex> lock(_mtx);
       visual_tools_->deleteAllMarkers();
       visual_tools_->setBaseFrame(msg->header.frame_id);
       createPlane(msg->terrain_normal, msg->central_point);
       createArrow(msg->terrain_normal, msg->central_point, rviz_visual_tools::CYAN, 10.0);
-      _mtx.unlock();
+      visual_tools_->trigger();
     }
   }
 };
@@ -288,8 +298,9 @@ public:
 protected:
   void callback(const wolf_msgs::msg::ContactForces::SharedPtr msg) override
   {
-    if(cnt_++ % decimate_ == 0 && _mtx.try_lock())
+    if(cnt_++ % decimate_ == 0)
     {
+      std::lock_guard<std::mutex> lock(_mtx);
       visual_tools_->deleteAllMarkers();
       visual_tools_->setBaseFrame(msg->header.frame_id);
       for (unsigned int i = 0; i < msg->contact.size(); ++i)
@@ -297,7 +308,7 @@ protected:
         createArrow(msg->des_contact_forces[i].force, msg->contact_positions[i], rviz_visual_tools::BLUE);
         createArrow(msg->contact_forces[i].force, msg->contact_positions[i], rviz_visual_tools::GREEN);
       }
-      _mtx.unlock();
+      visual_tools_->trigger();
     }
   }
 };
@@ -316,8 +327,9 @@ public:
 protected:
   void callback(const wolf_msgs::msg::ComTask::SharedPtr msg) override
   {
-    if(cnt_++ % decimate_ == 0 && _mtx.try_lock())
+    if(cnt_++ % decimate_ == 0)
     {
+      std::lock_guard<std::mutex> lock(_mtx);
       visual_tools_->deleteAllMarkers();
       visual_tools_->setBaseFrame(msg->header.frame_id);
       wolf_msgs::msg::ComTask com_projection = *msg;
@@ -325,7 +337,7 @@ protected:
       createSphere(com_projection.position_actual, rviz_visual_tools::RED);
       createSphere(msg->position_actual, rviz_visual_tools::GREEN);
       createArrow(msg->velocity_reference, msg->position_actual, rviz_visual_tools::BLUE, 1.0);
-      _mtx.unlock();
+      visual_tools_->trigger();
     }
   }
 };
@@ -344,15 +356,16 @@ public:
 protected:
   void callback(const wolf_msgs::msg::CapturePoint::SharedPtr msg) override
   {
-    if(cnt_++ % decimate_ == 0 && _mtx.try_lock())
+    if(cnt_++ % decimate_ == 0)
     {
+      std::lock_guard<std::mutex> lock(_mtx);
       visual_tools_->deleteAllMarkers();
       visual_tools_->setBaseFrame(msg->header.frame_id);
       wolf_msgs::msg::CapturePoint data = *msg;
       createSphere(data.capture_point, rviz_visual_tools::RED);
       createSphere(data.com, rviz_visual_tools::GREEN);
       createPolygon(data.support_polygon, rviz_visual_tools::GREEN);
-      _mtx.unlock();
+      visual_tools_->trigger();
     }
   }
 };
@@ -371,15 +384,16 @@ public:
 protected:
   void callback(const wolf_msgs::msg::FootHolds::SharedPtr msg) override
   {
-    if(cnt_++ % decimate_ == 0 && _mtx.try_lock())
+    if(cnt_++ % decimate_ == 0)
     {
+      std::lock_guard<std::mutex> lock(_mtx);
       visual_tools_->deleteAllMarkers();
       visual_tools_->setBaseFrame(msg->header.frame_id);
       for (unsigned int i = 0; i < msg->name.size(); ++i)
       {
         createSphere(msg->virtual_foothold[i], rviz_visual_tools::RED);
       }
-      _mtx.unlock();
+      visual_tools_->trigger();
     }
   }
 };
@@ -390,7 +404,9 @@ int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<rclcpp::Node>("wolf_controller");
+  rclcpp::NodeOptions node_options;
+  node_options.automatically_declare_parameters_from_overrides(true);
+  auto node = std::make_shared<rclcpp::Node>("wolf_controller", node_options);
 
   auto cfv = std::make_shared<wolf_controller::ContactForcesVisualizer>(node, "wolf_controller/contact_forces");
   auto comv = std::make_shared<wolf_controller::CoMVisualizer>(node, "wolf_controller/CoM");

@@ -350,7 +350,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: wolf_plot_node/contact_forces_visual_marker
+      Marker Topic: wolf_controller/contact_forces_visual_marker
       Name: ContactForces
       Namespaces:
         {}
@@ -358,7 +358,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: wolf_plot_node/friction_cones_visual_marker
+      Marker Topic: wolf_controller/friction_cones_visual_marker
       Name: FrictionCones
       Namespaces:
         {}
@@ -366,7 +366,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: wolf_plot_node/terrain_estimation_visual_marker
+      Marker Topic: wolf_controller/terrain_estimation_visual_marker
       Name: TerrainEstimation
       Namespaces:
         {}
@@ -374,7 +374,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: wolf_plot_node/capture_point_visual_marker
+      Marker Topic: wolf_controller/capture_point_visual_marker
       Name: CapturePoint
       Namespaces:
         {}

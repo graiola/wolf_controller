@@ -36,7 +36,7 @@ public:
 
   typedef std::shared_ptr<VisualTools> Ptr;
 
-  VisualTools(std::string base_frame, std::string marker_topic = RVIZ_MARKER_TOPIC, ros::NodeHandle nh = ros::NodeHandle("~"))
+  VisualTools(std::string base_frame, std::string marker_topic = RVIZ_MARKER_TOPIC, ros::NodeHandle nh = ros::NodeHandle())
     :RvizVisualTools(base_frame,marker_topic,nh) {}
 
   bool publishFrictionCone(const Eigen::Vector3d& origin, const double& height, const Eigen::Vector3d& normal, const double& friction_coeff, colors color)
@@ -96,7 +96,7 @@ public:
     cnt_ = 0;
     decimate_ = 10;
     subscriber_ = nh.subscribe(topic_name, 1, &Visualizer::callback, this);
-    visual_tools_.reset(new rviz_visual_tools::VisualTools(base_frame,topic_name+"_visual_marker"));
+    visual_tools_.reset(new rviz_visual_tools::VisualTools(base_frame,topic_name+"_visual_marker",nh));
   }
 
 protected:
@@ -435,5 +435,4 @@ int main(int argc, char **argv)
 
   return 0;
 }
-
 
