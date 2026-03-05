@@ -40,8 +40,8 @@ namespace wolf_controller {
 WolfController::WolfController()
   :ControllerInterface()
   ,stopping_(false)
-  ,publish_odom_tf_(false)
-  ,publish_odom_msg_(false)
+  ,publish_odom_tf_(true)
+  ,publish_odom_msg_(true)
   ,odom_pub_rate_(250)
 {
 
@@ -79,8 +79,8 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     auto_declare<std::string>("input_device",    "");
     auto_declare<bool>("use_contact_sensors", false);
     auto_declare<bool>("use_effort_command_for_estimation", false);
-    auto_declare<bool>("publish_odom_tf",     false);
-    auto_declare<bool>("publish_odom_msg",    false);
+    auto_declare<bool>("publish_odom_tf",     true);
+    auto_declare<bool>("publish_odom_msg",    true);
     auto_declare<std::string>("odom_topic",   "wolf_controller/odometry/robot");
 
     // Gains parameters
@@ -446,7 +446,7 @@ controller_interface::return_type WolfController::update(const rclcpp::Time & ti
 
 void WolfController::odomPublisher()
 {
-  RCLCPP_DEBUG(get_node()->get_logger(), "Start the odomPublisher");
+  RCLCPP_INFO(get_node()->get_logger(), "Start odomPublisher thread (rate=%.1f Hz)", odom_pub_rate_);
 
   // Create the following transformations:
   // odom --> base_footprint --> base --> base_stabilized
@@ -465,18 +465,24 @@ void WolfController::odomPublisher()
   double estimated_z;
   Eigen::Matrix3d tmp_R;
 
-  rclcpp::Time t_prev;
+  rclcpp::Time t_prev = get_node()->get_clock()->now();
   auto br = std::make_shared<tf2_ros::TransformBroadcaster>(get_node());
   nav_msgs::msg::Odometry odom_msg;
   geometry_msgs::msg::TransformStamped basefoot_T_world_msg;
   geometry_msgs::msg::TransformStamped basefoot_T_base_msg;
   geometry_msgs::msg::TransformStamped odom_T_basefoot_msg;
-  geometry_msgs::msg::TransformStamped odom_T_base_msg;
   geometry_msgs::msg::TransformStamped base_T_stabilized_msg;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
 
   if (publish_odom_msg_)
+  {
     odom_pub = get_node()->create_publisher<nav_msgs::msg::Odometry>(odom_topic_, 100);
+    RCLCPP_INFO(get_node()->get_logger(), "Publishing odom message on '%s'", odom_pub->get_topic_name());
+  }
+  else
+  {
+    RCLCPP_INFO(get_node()->get_logger(), "Odometry message publication disabled");
+  }
 
   rclcpp::Rate publishing_rate(odom_pub_rate_);
 
@@ -486,101 +492,99 @@ void WolfController::odomPublisher()
   while (!stopping_) //  && get_current_state().label() == "active"
   {
     rclcpp::Time t = get_node()->get_clock()->now();
+    // Keep stamps monotonic even if ROS time is paused / not advancing.
+    if (t <= t_prev)
+      t = t_prev + rclcpp::Duration::from_seconds(1.0 / odom_pub_rate_);
 
-    double dt = t.seconds() - t_prev.seconds();
+    // Get base wrt the ground truth
+    world_T_base.translation() = state_estimator->getGroundTruthBasePosition();
+    world_T_base.linear() = state_estimator->getGroundTruthBaseOrientation().toRotationMatrix();
 
-    if (dt > 0.0) // Avoid publishing duplicated transforms
+    // Get the estimated z of the base
+    estimated_z = state_estimator->getBaseHeightInBasefoot();
+
+    // Create the tf transform between base_footprint -> world
+    tmp_v = world_T_base.translation();
+    tmp_v(2) = tmp_v(2) - estimated_z;
+    rpyToRotTranspose(0.0, 0.0, robot_model->getBaseYawInWorld(), tmp_R);
+    tmp_v = -tmp_R * tmp_v;
+    basefoot_T_world.translation() = tmp_v;
+    basefoot_T_world.linear() = tmp_R;
+
+    // Set coordinates
+    basefoot_T_world_msg = tf2::eigenToTransform(basefoot_T_world);
+    // Set transform header
+    basefoot_T_world_msg.header.frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
+    basefoot_T_world_msg.child_frame_id = tf_prefix_ + WORLD_FRAME_NAME;
+    basefoot_T_world_msg.header.stamp = t;
+    br->sendTransform(basefoot_T_world_msg);
+
+    // Create the tf transform between base_footprint -> base
+    basefoot_T_base.linear() = robot_model->getBaseRotationInHf();
+    basefoot_T_base.translation().x() = 0.0;
+    basefoot_T_base.translation().y() = 0.0;
+    basefoot_T_base.translation().z() = estimated_z;
+
+    // Set coordinates
+    basefoot_T_base_msg = tf2::eigenToTransform(basefoot_T_base);
+    // Set transform header
+    basefoot_T_base_msg.header.frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
+    basefoot_T_base_msg.child_frame_id = tf_prefix_ + robot_model->getBaseLinkName();
+    basefoot_T_base_msg.header.stamp = t;
+    br->sendTransform(basefoot_T_base_msg);
+
+    // Create the tf transform between base -> base_stabilized
+    base_T_stabilized.linear() = robot_model->getBaseRotationInHf().transpose();
+    base_T_stabilized.translation().x() = 0.0;
+    base_T_stabilized.translation().y() = 0.0;
+    base_T_stabilized.translation().z() = 0.0;
+
+    // Set coordinates
+    base_T_stabilized_msg = tf2::eigenToTransform(base_T_stabilized);
+    // Set transform header
+    base_T_stabilized_msg.header.frame_id = tf_prefix_ + robot_model->getBaseLinkName();
+    base_T_stabilized_msg.child_frame_id = tf_prefix_ + BASE_STABILIZED_FRAME;
+    base_T_stabilized_msg.header.stamp = t;
+    br->sendTransform(base_T_stabilized_msg);
+
+    if (publish_odom_msg_ || publish_odom_tf_)
     {
-      // Get base wrt the ground truth
-      world_T_base.translation() = state_estimator->getGroundTruthBasePosition();
-      world_T_base.linear() = state_estimator->getGroundTruthBaseOrientation().toRotationMatrix();
-
-      // Get the estimated z of the base
-      estimated_z = state_estimator->getBaseHeightInBasefoot();
-
-      // Create the tf transform between base_footprint -> world
-      tmp_v = world_T_base.translation();
-      tmp_v(2) = tmp_v(2) - estimated_z;
-      rpyToRotTranspose(0.0, 0.0, robot_model->getBaseYawInWorld(), tmp_R);
-      tmp_v = -tmp_R * tmp_v;
-      basefoot_T_world.translation() = tmp_v;
-      basefoot_T_world.linear() = tmp_R;
+      odom_T_base = state_estimator->getFloatingBasePose();
+      odom_T_basefoot = odom_T_base * basefoot_T_base.inverse();
 
       // Set coordinates
-      basefoot_T_world_msg = tf2::eigenToTransform(basefoot_T_world);
+      odom_T_basefoot_msg = tf2::eigenToTransform(odom_T_basefoot);
       // Set transform header
-      basefoot_T_world_msg.header.frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
-      basefoot_T_world_msg.child_frame_id = tf_prefix_ + WORLD_FRAME_NAME;
-      basefoot_T_world_msg.header.stamp = t;
-      br->sendTransform(basefoot_T_world_msg);
+      odom_T_basefoot_msg.header.frame_id = tf_prefix_ + ODOM_FRAME;
+      odom_T_basefoot_msg.child_frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
+      odom_T_basefoot_msg.header.stamp = t;
 
-      // Create the tf transform between base_footprint -> base
-      basefoot_T_base.linear() = robot_model->getBaseRotationInHf();
-      basefoot_T_base.translation().x() = 0.0;
-      basefoot_T_base.translation().y() = 0.0;
-      basefoot_T_base.translation().z() = estimated_z;
+      if (publish_odom_tf_)
+        br->sendTransform(odom_T_basefoot_msg);
 
-      // Set coordinates
-      basefoot_T_base_msg = tf2::eigenToTransform(basefoot_T_base);
-      // Set transform header
-      basefoot_T_base_msg.header.frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
-      basefoot_T_base_msg.child_frame_id = tf_prefix_ + robot_model->getBaseLinkName();
-      basefoot_T_base_msg.header.stamp = t;
-      br->sendTransform(basefoot_T_base_msg);
+      // Create the odom message
+      odom_msg.header.stamp = t;
+      odom_msg.header.frame_id = odom_T_basefoot_msg.header.frame_id;
+      odom_msg.child_frame_id = odom_T_basefoot_msg.child_frame_id;
+      odom_msg.pose.pose.position.x = odom_T_basefoot_msg.transform.translation.x;
+      odom_msg.pose.pose.position.y = odom_T_basefoot_msg.transform.translation.y;
+      odom_msg.pose.pose.position.z = odom_T_basefoot_msg.transform.translation.z;
+      odom_msg.pose.pose.orientation = odom_T_basefoot_msg.transform.rotation;
+      odom_msg.twist.twist = tf2::toMsg(state_estimator->getFloatingBaseTwist());
 
-      // Create the tf transform between base -> base_stabilized
-      base_T_stabilized.linear() = robot_model->getBaseRotationInHf().transpose();
-      base_T_stabilized.translation().x() = 0.0;
-      base_T_stabilized.translation().y() = 0.0;
-      base_T_stabilized.translation().z() = 0.0;
+      // FIXME This is causing issues:
+      // wolf_estimation::eigenToCovariance(odom_estimator.getPoseCovariance(), odom_msg.pose.covariance);
+      // wolf_estimation::eigenToCovariance(odom_estimator.getTwistCovariance(), odom_msg.twist.covariance);
 
-      // Set coordinates
-      base_T_stabilized_msg = tf2::eigenToTransform(base_T_stabilized);
-      // Set transform header
-      base_T_stabilized_msg.header.frame_id = tf_prefix_ + robot_model->getBaseLinkName();
-      base_T_stabilized_msg.child_frame_id = tf_prefix_ + BASE_STABILIZED_FRAME;
-      base_T_stabilized_msg.header.stamp = t;
-      br->sendTransform(base_T_stabilized_msg);
-
-      if (publish_odom_msg_ || publish_odom_tf_)
-      {
-        odom_T_base = state_estimator->getFloatingBasePose();
-        odom_T_basefoot = odom_T_base * basefoot_T_base.inverse();
-
-        // Set coordinates
-        odom_T_basefoot_msg = tf2::eigenToTransform(odom_T_basefoot);
-        // Set transform header
-        odom_T_basefoot_msg.header.frame_id = tf_prefix_ + ODOM_FRAME;
-        odom_T_basefoot_msg.child_frame_id = tf_prefix_ + BASE_FOOTPRINT_FRAME;
-        odom_T_basefoot_msg.header.stamp = t;
-
-        if (publish_odom_tf_)
-          br->sendTransform(odom_T_basefoot_msg);
-
-        // Create the odom message
-        odom_msg.header.stamp = t;
-        odom_msg.header.frame_id = odom_T_basefoot_msg.header.frame_id;
-        odom_msg.child_frame_id = odom_T_basefoot_msg.child_frame_id;
-        odom_msg.pose.pose.position.x = odom_T_basefoot_msg.transform.translation.x;
-        odom_msg.pose.pose.position.y = odom_T_basefoot_msg.transform.translation.y;
-        odom_msg.pose.pose.position.z = odom_T_basefoot_msg.transform.translation.z;
-        odom_msg.pose.pose.orientation = odom_T_basefoot_msg.transform.rotation;
-        odom_msg.twist.twist = tf2::toMsg(state_estimator->getFloatingBaseTwist());
-
-        // FIXME This is causing issues:
-        // wolf_estimation::eigenToCovariance(odom_estimator.getPoseCovariance(), odom_msg.pose.covariance);
-        // wolf_estimation::eigenToCovariance(odom_estimator.getTwistCovariance(), odom_msg.twist.covariance);
-
-        if (publish_odom_msg_)
-          odom_pub->publish(odom_msg);
-      }
+      if (publish_odom_msg_)
+        odom_pub->publish(odom_msg);
     }
 
     t_prev = t;
 
     publishing_rate.sleep();
   }
-  RCLCPP_DEBUG(get_node()->get_logger(), "Stop the odomPublisher");
+  RCLCPP_INFO(get_node()->get_logger(), "Stop odomPublisher thread");
 }
 
 } //namespace
