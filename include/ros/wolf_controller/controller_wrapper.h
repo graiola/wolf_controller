@@ -24,15 +24,11 @@
 #include <wolf_msgs/CapturePoint.h>
 #include <wolf_msgs/ControllerState.h>
 #include <wolf_msgs/Float32.h>
+#include <wolf_msgs/MpcObservation.h>
 #include <wolf_msgs/String.h>
 
 // WoLF
 #include <wolf_controller_core/controller_core.h>
-
-// OCS2
-#ifdef OCS2
-#include <ocs2_msgs/mpc_observation.h>
-#endif
 
 // DDYNAMIC RECONFIGURE
 #ifdef DDYNAMIC_RECONFIGURE
@@ -100,10 +96,8 @@ protected:
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::FrictionCones>> friction_cones_pub_;
     /** @brief Real time publisher - capture point */
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::CapturePoint>> capture_point_pub_;
-    /** @brief Real time publisher - OCS2 */
-    #ifdef OCS2
-    std::shared_ptr<realtime_tools::RealtimePublisher<ocs2_msgs::mpc_observation>> mpc_observation_pub_;
-    #endif
+    /** @brief Real time publisher - MPC observation */
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::MpcObservation>> mpc_observation_pub_;
     /** @brief Controller pnt */
     wolf_controller::ControllerCore* controller_;
     /** @brief ROS services */
@@ -143,4 +137,3 @@ protected:
 };
 
 #endif // ROS_WRAPPERS_CONTROLLER_H
-

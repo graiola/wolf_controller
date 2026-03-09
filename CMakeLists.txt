@@ -55,8 +55,6 @@ find_package(geometry_msgs REQUIRED)
 
 # RT logger
 find_package(rt_logger QUIET)
-# OCS2
-find_package(ocs2_msgs QUIET)
 # DDYNAMIC RECONFIGURE
 find_package(ddynamic_reconfigure QUIET)
 
@@ -65,13 +63,6 @@ if(${rt_logger_FOUND})
     add_definitions(-DRT_LOGGER)
 else()
     message(STATUS "rt_logger not found.")
-endif()
-
-if(${ocs2_msgs_FOUND})
-    message(STATUS "Found ocs2_msgs, creating OCS2 interface for wolf_controller.")
-    add_definitions(-DOCS2)
-else()
-    message(STATUS "ocs2_msgs not found.")
 endif()
 
 if (${ddynamic_reconfigure_FOUND})
@@ -98,7 +89,6 @@ include_directories(
     ${rviz_visual_tools_INCLUDE_DIRS}
     ${rt_logger_INCLUDE_DIRS}
     ${ddynamic_reconfigure_INCLUDE_DIRS}
-    ${ocs2_msgs_INCLUDE_DIRS}
 )
 
 add_library(wolf_controller SHARED src/${ROS_VERSION}/controller_wrapper.cpp src/${ROS_VERSION}/controller_plugin.cpp)
@@ -115,7 +105,6 @@ target_link_libraries(wolf_controller
     ${rviz_visual_tools_LIBRARIES}
     ${rt_logger_LIBRARIES}
     ${ddynamic_reconfigure_LIBRARIES}
-    ${ocs2_msgs_LIBRARIES}
     ${pluginlib_LIBRARIES})
 target_compile_definitions(wolf_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
@@ -153,5 +142,4 @@ install(DIRECTORY plotjuggler/
 
 install(PROGRAMS scripts/${ROS_VERSION}/keyboard_node
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME})
-
 

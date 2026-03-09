@@ -28,7 +28,6 @@
 
   <depend condition="$ddynamic_reconfigure_FOUND == True">ddynamic_reconfigure</depend>
   <depend condition="$rt_logger_FOUND == True">rt_logger</depend>
-  <depend condition="$ocs2_msgs_FOUND == True">ocs2_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

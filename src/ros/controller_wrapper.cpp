@@ -333,15 +333,13 @@ ControllerRosWrapper::ControllerRosWrapper(ros::NodeHandle& root_nh, ros::NodeHa
   controller_state_pub_->msg_.modes = controller_->getModesAsString();
   controller_state_pub_->msg_.current_mode = controller_->getModeAsString();
 
-  #ifdef OCS2
-  // OCS2 mpc observation
-  mpc_observation_pub_.reset(new realtime_tools::RealtimePublisher<ocs2_msgs::mpc_observation>(controller_nh, "mpc_observation", 4));
+  // MPC observation
+  mpc_observation_pub_.reset(new realtime_tools::RealtimePublisher<wolf_msgs::MpcObservation>(controller_nh, "mpc_observation", 4));
   mpc_observation_pub_->msg_.state.value.resize(24);
   mpc_observation_pub_->msg_.input.value.resize(48);
   mpc_observation_pub_->msg_.time = 0.0;
   mpc_observation_pub_->msg_.mode = 0;
   controller_->getRobotModel()->getJointPosition(tmp_vectorXd_);
-  #endif
 
   // DDynamic reconfigure
   #ifdef DDYNAMIC_RECONFIGURE
@@ -679,7 +677,6 @@ void ControllerRosWrapper::publish(const ros::Time& time, const ros::Duration& p
     capture_point_pub_->unlockAndPublish();
   }
 
-  #ifdef OCS2
   if(mpc_observation_pub_.get() && mpc_observation_pub_->trylock())
   {
 
@@ -750,6 +747,5 @@ void ControllerRosWrapper::publish(const ros::Time& time, const ros::Duration& p
 
     mpc_observation_pub_->unlockAndPublish();
   }
-  #endif
 
 }

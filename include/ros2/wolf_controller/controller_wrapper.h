@@ -24,16 +24,12 @@
 #include <wolf_msgs/msg/friction_cones.hpp>
 #include <wolf_msgs/msg/capture_point.hpp>
 #include <wolf_msgs/msg/controller_state.hpp>
+#include <wolf_msgs/msg/mpc_observation.hpp>
 #include <wolf_msgs/srv/float32.hpp>
 #include <wolf_msgs/srv/string.hpp>
 
 // WoLF
 #include <wolf_controller_core/controller_core.h>
-
-// OCS2
-#ifdef OCS2
-#include <ocs2_msgs/msg/mpc_observation.hpp>
-#endif
 
 // DDYNAMIC RECONFIGURE
 #ifdef DDYNAMIC_RECONFIGURE
@@ -108,10 +104,8 @@ protected:
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::FrictionCones>> friction_cones_pub_;
     /** @brief Real time publisher - capture point */
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::CapturePoint>> capture_point_pub_;
-    /** @brief Real time publisher - OCS2 */
-    #ifdef OCS2
-    std::shared_ptr<realtime_tools::RealtimePublisher<ocs2_msgs::msg::MpcObservation>> mpc_observation_pub_;
-    #endif
+    /** @brief Publisher - MPC observation */
+    rclcpp::Publisher<wolf_msgs::msg::MpcObservation>::SharedPtr mpc_observation_pub_;
     /** @brief Controller pnt */
     wolf_controller::ControllerCore* controller_;
     /** @brief ROS services */
