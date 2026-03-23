@@ -39,12 +39,13 @@
     <!-- Odometry arguments -->
     <arg name="publish_odom_msg" default="true" description="publish nav_msgs/Odometry message from the controller"/>
     <arg name="publish_odom_tf"  default="true" description="publish the odom tf frame from the controller"/>
+    <arg name="controller_params" default="$(find-pkg-share $(var robot_model)_description)/params/$(var robot_model)_params.ros2.yaml" description="ros2 controller params file"/>
 
     <!-- Planner arguments -->
     <arg name="launch_planner"  default="false" description="launch the MPC planner"/>
 
     <executable cmd="python3 $(find-pkg-share wolf_controller_utils)/replace_yaml_placeholders.py 
-        $(find-pkg-share $(var robot_model)_description)/params/$(var robot_model)_params.ros2.yaml
+        $(var controller_params)
         $(find-pkg-share $(var robot_model)_description)/params/$(var robot_model)_params_$(var robot_name).ros2.yaml
         INPUT_DEVICE=$(var input_device)
         PERIOD=$(var period)
