@@ -10,6 +10,7 @@
 #include <wolf_controller_core/state_machine.h>
 
 // System
+#include <algorithm>
 #include <cmath>
 #include <functional>
 
@@ -868,9 +869,13 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
     msg->state.value[9] = base_rpy_.z();
     msg->state.value[10] = base_rpy_.y();
     msg->state.value[11] = base_rpy_.x();
+    base_rpy_prev_ = base_rpy_;
 
     const Eigen::VectorXd& q_joints = controller_->getRobotModel()->getJointPositions();
-    std::copy(q_joints.data(), q_joints.data() + q_joints.size(), &msg->state.value[12]);
+    const Eigen::Index n_state_joints =
+      q_joints.size() > FLOATING_BASE_DOFS ? std::min<Eigen::Index>(12, q_joints.size() - FLOATING_BASE_DOFS) : 0;
+    for (Eigen::Index i = 0; i < n_state_joints; ++i)
+      msg->state.value[12 + i] = q_joints(i + FLOATING_BASE_DOFS);
 
     // Input - contact forces
     msg->input.value[0] = controller_->getStateEstimator()->getContactForce("lf_foot").x();
@@ -888,7 +893,10 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
 
     // Input - joint velocities
     const Eigen::VectorXd& dq_joints = controller_->getRobotModel()->getJointVelocities();
-    std::copy(dq_joints.data(), dq_joints.data() + dq_joints.size(), &msg->input.value[36]);
+    const Eigen::Index n_input_joints =
+      dq_joints.size() > FLOATING_BASE_DOFS ? std::min<Eigen::Index>(12, dq_joints.size() - FLOATING_BASE_DOFS) : 0;
+    for (Eigen::Index i = 0; i < n_input_joints; ++i)
+      msg->input.value[36 + i] = dq_joints(i + FLOATING_BASE_DOFS);
 
     msg->time = time.seconds();
     msg->mode = static_cast<int8_t>(controller_->getStateEstimator()->getContact("lf_foot")) * 8
