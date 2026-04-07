@@ -17,6 +17,9 @@
 #include <wolf_controller_utils/tools.h>
 #include <wolf_controller_utils/ros2_param_getter.h>
 
+// STL
+#include <array>
+
 // ROS
 #include <tf2/transform_datatypes.h>
 #include <tf2_eigen/tf2_eigen.h>
@@ -163,6 +166,17 @@ controller_interface::InterfaceConfiguration WolfController::command_interface_c
 controller_interface::InterfaceConfiguration WolfController::state_interface_configuration() const
 {
   std::vector<std::string> conf_names;
+  std::string imu_name = imu_name_;
+
+  // ros2_control may ask for interfaces before on_configure() populates imu_name_.
+  if (imu_name.empty())
+  {
+    imu_name = get_node()->get_parameter("imu_sensor_name").as_string();
+  }
+  if (imu_name.empty())
+  {
+    imu_name = "imu";
+  }
 
   // Add POSITION, VELOCITY, and EFFORT interfaces for the joints
   for (const auto & joint_name : controller_->getJointNames())
@@ -173,16 +187,16 @@ controller_interface::InterfaceConfiguration WolfController::state_interface_con
   }
 
   // Add IMU interfaces
-  conf_names.push_back(imu_name_ + "/orientation.x");
-  conf_names.push_back(imu_name_ + "/orientation.y");
-  conf_names.push_back(imu_name_ + "/orientation.z");
-  conf_names.push_back(imu_name_ + "/orientation.w");
-  conf_names.push_back(imu_name_ + "/angular_velocity.x");
-  conf_names.push_back(imu_name_ + "/angular_velocity.y");
-  conf_names.push_back(imu_name_ + "/angular_velocity.z");
-  conf_names.push_back(imu_name_ + "/linear_acceleration.x");
-  conf_names.push_back(imu_name_ + "/linear_acceleration.y");
-  conf_names.push_back(imu_name_ + "/linear_acceleration.z");
+  conf_names.push_back(imu_name + "/orientation.x");
+  conf_names.push_back(imu_name + "/orientation.y");
+  conf_names.push_back(imu_name + "/orientation.z");
+  conf_names.push_back(imu_name + "/orientation.w");
+  conf_names.push_back(imu_name + "/angular_velocity.x");
+  conf_names.push_back(imu_name + "/angular_velocity.y");
+  conf_names.push_back(imu_name + "/angular_velocity.z");
+  conf_names.push_back(imu_name + "/linear_acceleration.x");
+  conf_names.push_back(imu_name + "/linear_acceleration.y");
+  conf_names.push_back(imu_name + "/linear_acceleration.z");
 
   return {controller_interface::interface_configuration_type::INDIVIDUAL, conf_names};
 }
@@ -213,6 +227,33 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
   publish_odom_tf_    = get_node()->get_parameter("publish_odom_tf").as_bool();
   publish_odom_msg_   = get_node()->get_parameter("publish_odom_msg").as_bool();
   odom_topic_         = get_node()->get_parameter("odom_topic").as_string();
+
+  if (tf_prefix_.empty())
+  {
+    tf_prefix_ = robot_name_;
+    RCLCPP_WARN(
+      get_node()->get_logger(),
+      "Parameter 'tf_prefix' was empty, falling back to robot_name '%s'.",
+      tf_prefix_.c_str());
+  }
+
+  if (imu_name_.empty())
+  {
+    imu_name_ = "imu";
+    RCLCPP_WARN(
+      get_node()->get_logger(),
+      "Parameter 'imu_sensor_name' was empty, falling back to '%s'.",
+      imu_name_.c_str());
+  }
+
+  if (odom_topic_.empty() || odom_topic_ == "wolf_controller/odometry/robot")
+  {
+    odom_topic_ = "odometry/robot";
+    RCLCPP_WARN(
+      get_node()->get_logger(),
+      "Parameter 'odom_topic' was unset/defaulted, falling back to '%s'.",
+      odom_topic_.c_str());
+  }
   
   fixTFprefix(tf_prefix_);
 
@@ -472,6 +513,8 @@ void WolfController::odomPublisher()
   geometry_msgs::msg::TransformStamped odom_T_basefoot_msg;
   geometry_msgs::msg::TransformStamped base_T_stabilized_msg;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
+  const std::array<double, 6> default_pose_covariance = {1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-2};
+  const std::array<double, 6> default_twist_covariance = {1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-2};
 
   if (publish_odom_msg_)
   {
@@ -638,6 +681,13 @@ void WolfController::odomPublisher()
       odom_msg.pose.pose.position.z = odom_T_basefoot_msg.transform.translation.z;
       odom_msg.pose.pose.orientation = odom_T_basefoot_msg.transform.rotation;
       odom_msg.twist.twist = tf2::toMsg(state_estimator->getFloatingBaseTwist());
+      odom_msg.pose.covariance.fill(0.0);
+      odom_msg.twist.covariance.fill(0.0);
+      for (size_t i = 0; i < default_pose_covariance.size(); ++i)
+      {
+        odom_msg.pose.covariance[i * 7] = default_pose_covariance[i];
+        odom_msg.twist.covariance[i * 7] = default_twist_covariance[i];
+      }
 
       // FIXME This is causing issues:
       // wolf_estimation::eigenToCovariance(odom_estimator.getPoseCovariance(), odom_msg.pose.covariance);
