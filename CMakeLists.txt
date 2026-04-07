@@ -30,11 +30,14 @@ if(${catkin_FOUND})
     message(STATUS "Add ROS definition")
 elseif(${ament_cmake_FOUND})
     set(ROS_VERSION "ros2")
-    pluginlib_export_plugin_description_file(controller_interface wolf_controller_plugin.xml)
-    ament_export_dependencies(controller_interface)
-    ament_export_include_directories(include)
-    ament_export_libraries(wolf_controller)
-    ament_package()
+    find_package(builtin_interfaces REQUIRED)
+    find_package(hardware_interface REQUIRED)
+    find_package(nav_msgs REQUIRED)
+    find_package(rclcpp REQUIRED)
+    find_package(rclcpp_lifecycle REQUIRED)
+    find_package(sensor_msgs REQUIRED)
+    find_package(std_srvs REQUIRED)
+    find_package(tf2_ros REQUIRED)
     add_definitions(-DROS2)
     message(STATUS "Add ROS2 definition")
 endif()
@@ -74,7 +77,6 @@ endif()
 
 include_directories(
     /opt/ros/$ENV{ROS_DISTRO}/include/kdl_parser/  # FIX FOR ROS HUMBLE
-    include/${ROS_VERSION}
     ${tf2_INCLUDE_DIRS}
     ${tf2_eigen_INCLUDE_DIRS}
     ${controller_interface_INCLUDE_DIRS}
@@ -92,25 +94,91 @@ include_directories(
 )
 
 add_library(wolf_controller SHARED src/${ROS_VERSION}/controller_wrapper.cpp src/${ROS_VERSION}/controller_plugin.cpp)
-target_link_libraries(wolf_controller
-    ${tf2_LIBRARIES}
-    ${tf2_eigen_LIBRARIES}
-    ${controller_interface_LIBRARIES}
-    ${wolf_controller_utils_LIBRARIES}
-    ${wolf_hardware_interface_LIBRARIES}
-    ${wolf_controller_core_LIBRARIES}
-    ${wolf_wbid_LIBRARIES}
-    ${wolf_estimation_LIBRARIES}
-    ${realtime_tools_LIBRARIES}
-    ${rviz_visual_tools_LIBRARIES}
-    ${rt_logger_LIBRARIES}
-    ${ddynamic_reconfigure_LIBRARIES}
-    ${pluginlib_LIBRARIES})
+target_include_directories(wolf_controller PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${ROS_VERSION}>
+    $<INSTALL_INTERFACE:include>
+)
 target_compile_definitions(wolf_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
+if(${catkin_FOUND})
+    target_link_libraries(wolf_controller
+        ${tf2_LIBRARIES}
+        ${tf2_eigen_LIBRARIES}
+        ${controller_interface_LIBRARIES}
+        ${wolf_controller_utils_LIBRARIES}
+        ${wolf_hardware_interface_LIBRARIES}
+        ${wolf_controller_core_LIBRARIES}
+        ${wolf_wbid_LIBRARIES}
+        ${wolf_estimation_LIBRARIES}
+        ${realtime_tools_LIBRARIES}
+        ${rviz_visual_tools_LIBRARIES}
+        ${rt_logger_LIBRARIES}
+        ${ddynamic_reconfigure_LIBRARIES}
+        ${pluginlib_LIBRARIES}
+    )
+elseif(${ament_cmake_FOUND})
+    ament_target_dependencies(wolf_controller
+        builtin_interfaces
+        controller_interface
+        geometry_msgs
+        hardware_interface
+        nav_msgs
+        pluginlib
+        rclcpp
+        rclcpp_lifecycle
+        realtime_tools
+        sensor_msgs
+        std_srvs
+        tf2
+        tf2_eigen
+        tf2_ros
+        rviz_visual_tools
+        wolf_controller_core
+        wolf_controller_utils
+        wolf_estimation
+        wolf_hardware_interface
+        wolf_msgs
+        wolf_wbid
+    )
+
+    if(${rt_logger_FOUND})
+        ament_target_dependencies(wolf_controller rt_logger)
+    endif()
+else()
+    target_link_libraries(wolf_controller
+        ${rt_logger_LIBRARIES}
+        ${ddynamic_reconfigure_LIBRARIES}
+    )
+endif()
 
 add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
-target_link_libraries(plot_node ${rviz_visual_tools_LIBRARIES} ${wolf_msgs_LIBRARIES} ${geometry_msgs_LIBRARIES})
+target_include_directories(plot_node PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${ROS_VERSION}>
+    $<INSTALL_INTERFACE:include>
+)
+
+if(${catkin_FOUND})
+    target_link_libraries(plot_node
+        ${rviz_visual_tools_LIBRARIES}
+        ${wolf_msgs_LIBRARIES}
+        ${geometry_msgs_LIBRARIES}
+    )
+elseif(${ament_cmake_FOUND})
+    ament_target_dependencies(plot_node
+        builtin_interfaces
+        geometry_msgs
+        rclcpp
+        rviz_visual_tools
+        sensor_msgs
+        wolf_msgs
+    )
+else()
+    target_link_libraries(plot_node
+        ${rviz_visual_tools_LIBRARIES}
+        ${wolf_msgs_LIBRARIES}
+        ${geometry_msgs_LIBRARIES}
+    )
+endif()
 
 install(
   DIRECTORY include/${ROS_VERSION}/${PROJECT_NAME}
@@ -143,3 +211,32 @@ install(DIRECTORY plotjuggler/
 install(PROGRAMS scripts/${ROS_VERSION}/keyboard_node
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME})
 
+if(${ament_cmake_FOUND})
+    pluginlib_export_plugin_description_file(controller_interface wolf_controller_plugin.xml)
+    ament_export_dependencies(
+        builtin_interfaces
+        controller_interface
+        geometry_msgs
+        hardware_interface
+        nav_msgs
+        pluginlib
+        rclcpp
+        rclcpp_lifecycle
+        realtime_tools
+        sensor_msgs
+        std_srvs
+        tf2
+        tf2_eigen
+        tf2_ros
+        rviz_visual_tools
+        wolf_controller_core
+        wolf_controller_utils
+        wolf_estimation
+        wolf_hardware_interface
+        wolf_msgs
+        wolf_wbid
+    )
+    ament_export_include_directories(include)
+    ament_export_libraries(wolf_controller)
+    ament_package()
+endif()
