@@ -104,8 +104,8 @@ protected:
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::FrictionCones>> friction_cones_pub_;
     /** @brief Real time publisher - capture point */
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::CapturePoint>> capture_point_pub_;
-    /** @brief Publisher - MPC observation */
-    rclcpp::Publisher<wolf_msgs::msg::MpcObservation>::SharedPtr mpc_observation_pub_;
+    /** @brief Real time publisher - MPC observation */
+    std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::MpcObservation>> mpc_observation_pub_;
     /** @brief Controller pnt */
     wolf_controller::ControllerCore* controller_;
     /** @brief ROS services */

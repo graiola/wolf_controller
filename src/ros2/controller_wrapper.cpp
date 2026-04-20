@@ -397,7 +397,12 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   controller_state_pub_->msg_.current_mode = controller_->getModeAsString();
 
   // MPC observation
-  mpc_observation_pub_ = controller_node->create_publisher<wolf_msgs::msg::MpcObservation>("wolf_controller/mpc_observation", rclcpp::QoS(4));
+  auto mpc_observation_pub = controller_node->create_publisher<wolf_msgs::msg::MpcObservation>("wolf_controller/mpc_observation", rclcpp::QoS(4));
+  mpc_observation_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::MpcObservation>>(mpc_observation_pub);
+  mpc_observation_pub_->msg_.state.value.resize(24);
+  mpc_observation_pub_->msg_.input.value.resize(48);
+  mpc_observation_pub_->msg_.time = 0.0;
+  mpc_observation_pub_->msg_.mode = 0;
   controller_->getRobotModel()->getJointPosition(tmp_vectorXd_);
 
   // DDynamic reconfigure
@@ -842,68 +847,75 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
     capture_point_pub_->unlockAndPublish();
   }
 
-  // MPC observation publishing
-  if(mpc_observation_pub_)
+   if(mpc_observation_pub_.get() && mpc_observation_pub_->trylock())
   {
-    auto msg = std::make_unique<wolf_msgs::msg::MpcObservation>();
-    msg->state.value.resize(24);
-    msg->input.value.resize(48);
 
     controller_->getRobotModel()->getCentroidalMomentum(tmp_vector6d_);
     controller_->getRobotModel()->getFloatingBasePose(tmp_affine3d_);
     double robot_mass = controller_->getRobotModel()->getMass();
 
-    // State - linear momentum, angular momentum, base position, base orientation, joint positions
-    msg->state.value[0] = tmp_vector6d_(0) / robot_mass;
-    msg->state.value[1] = tmp_vector6d_(1) / robot_mass;
-    msg->state.value[2] = tmp_vector6d_(2) / robot_mass;
-    msg->state.value[3] = tmp_vector6d_(3) / robot_mass;
-    msg->state.value[4] = tmp_vector6d_(4) / robot_mass;
-    msg->state.value[5] = tmp_vector6d_(5) / robot_mass;
-    msg->state.value[6] = tmp_affine3d_.translation().x();
-    msg->state.value[7] = tmp_affine3d_.translation().y();
-    msg->state.value[8] = tmp_affine3d_.translation().z();
+    // STATE
+    // linear momentum
+    mpc_observation_pub_->msg_.state.value[0] = tmp_vector6d_(0) / robot_mass;
+    mpc_observation_pub_->msg_.state.value[1] = tmp_vector6d_(1) / robot_mass;
+    mpc_observation_pub_->msg_.state.value[2] = tmp_vector6d_(2) / robot_mass;
 
+    // angular momentum
+    mpc_observation_pub_->msg_.state.value[3] = tmp_vector6d_(3) / robot_mass;
+    mpc_observation_pub_->msg_.state.value[4] = tmp_vector6d_(4) / robot_mass;
+    mpc_observation_pub_->msg_.state.value[5] = tmp_vector6d_(5) / robot_mass;
+
+    // base position
+    mpc_observation_pub_->msg_.state.value[6] = tmp_affine3d_.translation().x();
+    mpc_observation_pub_->msg_.state.value[7] = tmp_affine3d_.translation().y();
+    mpc_observation_pub_->msg_.state.value[8] = tmp_affine3d_.translation().z();
+
+    // base orientation (ZYX)
     base_rpy_ = wolf_controller_utils::rotToRpy(tmp_affine3d_.linear());
-    wolf_controller_utils::unwrap(base_rpy_prev_, base_rpy_);
-    msg->state.value[9] = base_rpy_.z();
-    msg->state.value[10] = base_rpy_.y();
-    msg->state.value[11] = base_rpy_.x();
+    wolf_controller_utils::unwrap(base_rpy_prev_,base_rpy_);
+    mpc_observation_pub_->msg_.state.value[9]  = base_rpy_.z();
+    mpc_observation_pub_->msg_.state.value[10] = base_rpy_.y();
+    mpc_observation_pub_->msg_.state.value[11] = base_rpy_.x();
     base_rpy_prev_ = base_rpy_;
 
-    const Eigen::VectorXd& q_joints = controller_->getRobotModel()->getJointPositions();
-    const Eigen::Index n_state_joints =
-      q_joints.size() > FLOATING_BASE_DOFS ? std::min<Eigen::Index>(12, q_joints.size() - FLOATING_BASE_DOFS) : 0;
-    for (Eigen::Index i = 0; i < n_state_joints; ++i)
-      msg->state.value[12 + i] = q_joints(i + FLOATING_BASE_DOFS);
+    // joint positions (check the order, also be sure that we are not taking the arm joints)
+    controller_->getRobotModel()->getJointPosition(tmp_vectorXd_);
+    for(unsigned int i=0; i<12; i++)
+      mpc_observation_pub_->msg_.state.value[12 + i] = tmp_vectorXd_(i+FLOATING_BASE_DOFS);
 
-    // Input - contact forces
-    msg->input.value[0] = controller_->getStateEstimator()->getContactForce("lf_foot").x();
-    msg->input.value[1] = controller_->getStateEstimator()->getContactForce("lf_foot").y();
-    msg->input.value[2] = controller_->getStateEstimator()->getContactForce("lf_foot").z();
-    msg->input.value[3] = controller_->getStateEstimator()->getContactForce("lh_foot").x();
-    msg->input.value[4] = controller_->getStateEstimator()->getContactForce("lh_foot").y();
-    msg->input.value[5] = controller_->getStateEstimator()->getContactForce("lh_foot").z();
-    msg->input.value[6] = controller_->getStateEstimator()->getContactForce("rf_foot").x();
-    msg->input.value[7] = controller_->getStateEstimator()->getContactForce("rf_foot").y();
-    msg->input.value[8] = controller_->getStateEstimator()->getContactForce("rf_foot").z();
-    msg->input.value[9] = controller_->getStateEstimator()->getContactForce("rh_foot").x();
-    msg->input.value[10] = controller_->getStateEstimator()->getContactForce("rh_foot").y();
-    msg->input.value[11] = controller_->getStateEstimator()->getContactForce("rh_foot").z();
+    // INPUT
+    // contact forces (FIXME hardcoded names and order)
+    mpc_observation_pub_->msg_.input.value[0] = controller_->getStateEstimator()->getContactForce("lf_foot").x();
+    mpc_observation_pub_->msg_.input.value[1] = controller_->getStateEstimator()->getContactForce("lf_foot").y();
+    mpc_observation_pub_->msg_.input.value[2] = controller_->getStateEstimator()->getContactForce("lf_foot").z();
 
-    // Input - joint velocities
-    const Eigen::VectorXd& dq_joints = controller_->getRobotModel()->getJointVelocities();
-    const Eigen::Index n_input_joints =
-      dq_joints.size() > FLOATING_BASE_DOFS ? std::min<Eigen::Index>(12, dq_joints.size() - FLOATING_BASE_DOFS) : 0;
-    for (Eigen::Index i = 0; i < n_input_joints; ++i)
-      msg->input.value[36 + i] = dq_joints(i + FLOATING_BASE_DOFS);
+    mpc_observation_pub_->msg_.input.value[3] = controller_->getStateEstimator()->getContactForce("lh_foot").x();
+    mpc_observation_pub_->msg_.input.value[4] = controller_->getStateEstimator()->getContactForce("lh_foot").y();
+    mpc_observation_pub_->msg_.input.value[5] = controller_->getStateEstimator()->getContactForce("lh_foot").z();
 
-    msg->time = time.seconds();
-    msg->mode = static_cast<int8_t>(controller_->getStateEstimator()->getContact("lf_foot")) * 8
-              + static_cast<int8_t>(controller_->getStateEstimator()->getContact("lh_foot")) * 4
-              + static_cast<int8_t>(controller_->getStateEstimator()->getContact("rf_foot")) * 2
-              + static_cast<int8_t>(controller_->getStateEstimator()->getContact("rh_foot"));
-    mpc_observation_pub_->publish(std::move(msg));
+    mpc_observation_pub_->msg_.input.value[6] = controller_->getStateEstimator()->getContactForce("rf_foot").x();
+    mpc_observation_pub_->msg_.input.value[7] = controller_->getStateEstimator()->getContactForce("rf_foot").y();
+    mpc_observation_pub_->msg_.input.value[8] = controller_->getStateEstimator()->getContactForce("rf_foot").z();
+
+    mpc_observation_pub_->msg_.input.value[9]  = controller_->getStateEstimator()->getContactForce("rh_foot").x();
+    mpc_observation_pub_->msg_.input.value[10] = controller_->getStateEstimator()->getContactForce("rh_foot").y();
+    mpc_observation_pub_->msg_.input.value[11] = controller_->getStateEstimator()->getContactForce("rh_foot").z();
+
+    // joints velocities
+    controller_->getRobotModel()->getJointVelocity(tmp_vectorXd_);
+    for(unsigned int i=0; i<12; i++)
+      mpc_observation_pub_->msg_.input.value[36 + i] = tmp_vectorXd_(i+FLOATING_BASE_DOFS);
+
+    // time
+    mpc_observation_pub_->msg_.time = mpc_observation_pub_->msg_.time + period.seconds();
+
+    // mode (FIXME hardcoded names)
+    mpc_observation_pub_->msg_.mode = static_cast<int8_t>(controller_->getStateEstimator()->getContact("lf_foot"))*8
+                                    + static_cast<int8_t>(controller_->getStateEstimator()->getContact("lh_foot"))*4
+                                    + static_cast<int8_t>(controller_->getStateEstimator()->getContact("rf_foot"))*2
+                                    + static_cast<int8_t>(controller_->getStateEstimator()->getContact("rh_foot"));
+
+    mpc_observation_pub_->unlockAndPublish();
   }
 
 }
