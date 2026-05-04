@@ -42,6 +42,8 @@ elseif(${ament_cmake_FOUND})
     message(STATUS "Add ROS2 definition")
 endif()
 
+set(WOLF_CONTROLLER_LOCAL_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/${ROS_VERSION}")
+
 # ROS pkgs
 find_package(tf2 REQUIRED)
 find_package(tf2_eigen REQUIRED)
@@ -76,6 +78,11 @@ else()
 endif()
 
 include_directories(
+    BEFORE
+    ${WOLF_CONTROLLER_LOCAL_INCLUDE_DIR}
+)
+
+include_directories(
     /opt/ros/$ENV{ROS_DISTRO}/include/kdl_parser/  # FIX FOR ROS HUMBLE
     ${tf2_INCLUDE_DIRS}
     ${tf2_eigen_INCLUDE_DIRS}
@@ -95,7 +102,7 @@ include_directories(
 
 add_library(wolf_controller SHARED src/${ROS_VERSION}/controller_wrapper.cpp src/${ROS_VERSION}/controller_plugin.cpp)
 target_include_directories(wolf_controller PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${ROS_VERSION}>
+    $<BUILD_INTERFACE:${WOLF_CONTROLLER_LOCAL_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
 target_compile_definitions(wolf_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
@@ -153,7 +160,7 @@ endif()
 
 add_executable(plot_node src/${ROS_VERSION}/plot_node.cpp)
 target_include_directories(plot_node PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${ROS_VERSION}>
+    $<BUILD_INTERFACE:${WOLF_CONTROLLER_LOCAL_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
 
