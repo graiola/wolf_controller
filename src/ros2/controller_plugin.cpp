@@ -22,7 +22,15 @@
 
 // ROS
 #include <tf2/transform_datatypes.h>
-#include <tf2_eigen/tf2_eigen.h>
+#if __has_include(<tf2_eigen/tf2_eigen/tf2_eigen.hpp>)
+  #include <tf2_eigen/tf2_eigen/tf2_eigen.hpp>
+#elif __has_include(<tf2_eigen/tf2_eigen/tf2_eigen.h>)
+  #include <tf2_eigen/tf2_eigen/tf2_eigen.h>
+#elif __has_include(<tf2_eigen/tf2_eigen.hpp>)
+  #include <tf2_eigen/tf2_eigen.hpp>
+#else
+  #include <tf2_eigen/tf2_eigen.h>
+#endif
 
 // RT GUI
 #ifdef RT_GUI
@@ -100,6 +108,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     std::vector<std::string> cartesian_tasks = {"lf_foot", "rf_foot", "lh_foot", "rh_foot", "waist"};
     for(const auto& cart_task : cartesian_tasks)
     {
+      auto_declare<std::string>("gains."+cart_task+".type", "");
       auto_declare<double>("gains."+cart_task+".lambda1", NAN);
       auto_declare<double>("gains."+cart_task+".lambda2", NAN);
       auto_declare<double>("gains."+cart_task+".weight",  NAN);
