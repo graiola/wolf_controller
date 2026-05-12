@@ -93,6 +93,44 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
     auto_declare<bool>("publish_odom_tf",     true);
     auto_declare<bool>("publish_odom_msg",    true);
     auto_declare<std::string>("odom_topic",   "wolf_controller/odometry/robot");
+    auto_declare<double>("default_duty_factor", 0.3);
+    auto_declare<double>("default_swing_frequency", 3.0);
+    auto_declare<double>("default_contact_threshold", 50.0);
+    auto_declare<double>("default_step_height", 0.05);
+    auto_declare<double>("max_step_height", 0.15);
+    auto_declare<double>("max_step_length", 0.5);
+    auto_declare<double>("default_step_reflex_contact_threshold", 50.0 / 3.0);
+    auto_declare<double>("default_step_reflex_max_retraction", 0.15 / 2.0);
+    auto_declare<double>("max_base_height", 0.5);
+    auto_declare<double>("max_base_roll", 2.0 * M_PI);
+    auto_declare<double>("max_base_pitch", 2.0 * M_PI);
+    auto_declare<double>("min_base_roll", -2.0 * M_PI);
+    auto_declare<double>("min_base_pitch", -2.0 * M_PI);
+    auto_declare<double>("default_base_linear_velocity", 0.5);
+    auto_declare<double>("default_base_linear_velocity_x", 0.5);
+    auto_declare<double>("default_base_linear_velocity_y", 0.5);
+    auto_declare<double>("default_base_linear_velocity_z", 0.5);
+    auto_declare<double>("default_base_angular_velocity", 0.5);
+    auto_declare<double>("default_base_angular_velocity_roll", 0.5);
+    auto_declare<double>("default_base_angular_velocity_pitch", 0.5);
+    auto_declare<double>("default_base_angular_velocity_yaw", 0.5);
+    auto_declare<double>("default_friction_cones_mu", 0.7);
+    auto_declare<double>("default_cutoff_freq_gyroscope", 300.0);
+    auto_declare<double>("default_cutoff_freq_accelerometer", 300.0);
+    auto_declare<double>("default_cutoff_freq_qdot", 300.0);
+    auto_declare<double>("default_push_recovery_sensibility", 0.0);
+    auto_declare<bool>("activate_com_z", true);
+    auto_declare<bool>("activate_postural", false);
+    auto_declare<bool>("activate_angular_momentum", true);
+    auto_declare<bool>("activate_joint_position_limits", false);
+    auto_declare<double>("regularization", 1e-3);
+    auto_declare<std::string>("qp_solver", "eiQuadProg");
+    auto_declare<double>("min_forces_weight", 0.0);
+    auto_declare<double>("min_qddot_weight", 0.0);
+    auto_declare<std::string>("estimation_position_type", "kalman_filter");
+    auto_declare<std::string>("estimation_orientation_type", "imu_magnetometer");
+    auto_declare<bool>("activate_push_recovery", false);
+    auto_declare<bool>("activate_step_reflex", false);
 
     // Gains parameters
     // Leg proportional gains (Kp_leg)

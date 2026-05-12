@@ -15,15 +15,18 @@
     <!-- Input device argument -->
     <arg name="input_device" default="keyboard"    description="[ps3/xbox/keyboard/spacemouse]"/>
 
-    <!-- Gazebo Sim (Ignition/Fortress) related arguments -->
+    <!-- Gazebo Sim related arguments -->
     <arg name="gazebo"        default="true"     description="start Gazebo Sim"/>
     <arg name="gazebo_debug"  default="false"    description="increase Gazebo Sim log verbosity"/>
-    <arg name="engine"        default="ode"      description="kept for compatibility (ignored by Ignition launcher)"/>
+    <arg name="engine"        default="ode"      description="physics engine selector passed to the world configuration"/>
     <arg name="spawn_robot"   default="true"     description="spawn the robot in Gazebo Sim"/>
     <arg name="initial_xyz"   default="[0,0,0]"  description="initial robot xyz position in the world"/>
     <arg name="initial_rpy"   default="[0,0,0]"  description="initial robot rpy position in the world"/>
     <arg name="world_name"    default="empty"    description="load a specific world from wolf_gazebo_resources"/>
     <arg name="world_file"    default="$(find-pkg-share wolf_gazebo_resources)/worlds/$(var world_name).world" description="load a specific world file"/>
+    <arg name="simulator" default="gz" description="Gazebo CLI family to use for world interaction"/>
+    <arg name="sim_world_name" default="$(var world_name)" description="shared Gazebo Sim world name for service resolution"/>
+    <arg name="transport_msg_prefix" default="gz" description="Gazebo transport message namespace prefix"/>
     <arg name="load_global_gazebo_systems" default="true" description="load Gazebo Sim global sensor systems for this robot"/>
 
     <!-- GUI related arguments -->
@@ -41,13 +44,15 @@
     <arg name="publish_odom_msg" default="true" description="publish nav_msgs/Odometry message from the controller"/>
     <arg name="publish_odom_tf"  default="true" description="publish the odom tf frame from the controller"/>
     <arg name="controller_params" default="$(find-pkg-share $(var robot_model)_description)/params/$(var robot_model)_params.ros2.yaml" description="ros2 controller params file"/>
+    <arg name="controller_params_file" default="/tmp/wolf_controller_params/$(var robot_model)_params_$(var robot_name).ros2.yaml" description="shared resolved ROS2 controller params file"/>
 
     <!-- Planner arguments -->
     <arg name="launch_planner"  default="false" description="launch the MPC planner"/>
+    <arg name="controller_start_delay" default="10.0" description="delay before spawning the high-level controller so spawn-time joint reset can settle"/>
 
     <executable cmd="python3 $(find-pkg-share wolf_controller_utils)/replace_yaml_placeholders.py 
         $(var controller_params)
-        $(find-pkg-share $(var robot_model)_description)/params/$(var robot_model)_params_$(var robot_name).ros2.yaml
+        $(var controller_params_file)
         INPUT_DEVICE=$(var input_device)
         PERIOD=$(var period)
         MAX_VEL_X=$(var max_vel_x)
@@ -83,6 +88,7 @@
                 <arg name="robot_model"       value="$(var robot_model)" />
                 <arg name="robot_name"        value="$(var robot_name)" />
                 <arg name="world_name"        value="$(var world_name)" />
+                <arg name="sim_world_name"    value="$(var sim_world_name)" />
                 <arg name="world_file"        value="$(var world_file)" />
                 <arg name="period"            value="$(var period)" />
                 <arg name="use_sim_time"      value="$(var use_sim_time)"/>
@@ -90,8 +96,10 @@
                 <arg name="arm_name"          value="$(var arm_name)"/>
                 <arg name="debug"             value="$(var gazebo_debug)"/>
                 <arg name="engine"            value="$(var engine)"/>
-                <arg name="simulator"         value="ignition"/>
+                <arg name="simulator"         value="$(var simulator)"/>
+                <arg name="transport_msg_prefix" value="$(var transport_msg_prefix)"/>
                 <arg name="load_global_gazebo_systems" value="$(var load_global_gazebo_systems)"/>
+                <arg name="controller_params_file" value="$(var controller_params_file)"/>
             </include>
         </group>
         <group unless="$(var gazebo)">
@@ -102,6 +110,7 @@
                 <arg name="robot_model"       value="$(var robot_model)" />
                 <arg name="robot_name"        value="$(var robot_name)" />
                 <arg name="world_name"        value="$(var world_name)" />
+                <arg name="sim_world_name"    value="$(var sim_world_name)" />
                 <arg name="world_file"        value="$(var world_file)" />
                 <arg name="period"            value="$(var period)" />
                 <arg name="use_sim_time"      value="$(var use_sim_time)"/>
@@ -109,8 +118,10 @@
                 <arg name="arm_name"          value="$(var arm_name)"/>
                 <arg name="debug"             value="$(var gazebo_debug)"/>
                 <arg name="engine"            value="$(var engine)"/>
-                <arg name="simulator"         value="ignition"/>
+                <arg name="simulator"         value="$(var simulator)"/>
+                <arg name="transport_msg_prefix" value="$(var transport_msg_prefix)"/>
                 <arg name="load_global_gazebo_systems" value="$(var load_global_gazebo_systems)"/>
+                <arg name="controller_params_file" value="$(var controller_params_file)"/>
             </include>
         </group>
 
@@ -123,6 +134,8 @@
             <param name="initial_xyz"              value="$(var initial_xyz)"/>
             <param name="initial_rpy"              value="$(var initial_rpy)"/>
             <param name="world_file"               value="$(var world_file)"/>
+            <param name="simulator"                value="$(var simulator)"/>
+            <param name="sim_world_name"           value="$(var sim_world_name)"/>
         </node>
 
         <!-- Convert joint states to TF transforms for rviz, etc -->
@@ -130,7 +143,7 @@
             <remap from="/joint_states"     to="$(var robot_name)/joint_states"/>
             <param name="frame_prefix"      value="$(var robot_name)/"/>
             <param name="robot_description" value="$(command 'xacro $(find-pkg-share $(var robot_model)_description)/robots/$(var robot_model).urdf.xacro 
-            sensors:=$(var sensors) period:=$(var period) arm_name:=$(var arm_name) robot_name:=$(var robot_name) simulator:=ignition')"/>
+            sensors:=$(var sensors) period:=$(var period) arm_name:=$(var arm_name) robot_name:=$(var robot_name) simulator:=$(var simulator) controller_params_file:=$(var controller_params_file)')"/>
         </node>
 
         <group if="$(eval '\'$(var robot_name)\' == \'\'')">
@@ -142,7 +155,7 @@
                         --switch-timeout 120.0
                         --service-call-timeout 30.0"/>
 
-            <timer period="4.0">
+            <timer period="$(var controller_start_delay)">
             <node pkg="controller_manager" exec="spawner"
                     name="wolf_controller_spawner" output="screen"
                     args="wolf_controller
@@ -162,7 +175,7 @@
                         --switch-timeout 120.0
                         --service-call-timeout 30.0"/>
 
-            <timer period="4.0">
+            <timer period="$(var controller_start_delay)">
             <node pkg="controller_manager" exec="spawner"
                     name="wolf_controller_spawner" output="screen"
                     args="wolf_controller
