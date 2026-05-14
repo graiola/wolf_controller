@@ -21,6 +21,7 @@
 #include <wolf_controller_core/controller_core.h>
 #include <wolf_controller/devices/interface.h>
 #include <wolf_controller/controller_wrapper.h>
+#include <wolf_controller_utils/ros2_param_getter.h>
 #include <wolf_controller_utils/tools.h>
 
 // Eigen
@@ -149,6 +150,12 @@ private:
   };
 
   std::vector<JointHandle> joint_handles_;
+  /** @brief Shadow copy of the last effort commands written to ros2_control. */
+  std::vector<double> last_effort_commands_;
+  /** @brief Last valid joint states, used when Jazzy state handles are temporarily unavailable. */
+  std::vector<double> last_joint_positions_;
+  std::vector<double> last_joint_velocities_;
+  std::vector<double> last_joint_efforts_;
 
   std::unique_ptr<IMUHandle> imu_handle_;
 
@@ -181,6 +188,8 @@ private:
   DevicesHandler devices_;
   /** @brief Manage the ros interfacing */
   ControllerRosWrapper::Ptr ros_wrapper_;
+  /** @brief Keeps the local parameter fast-path active while the controller lives. */
+  std::unique_ptr<wolf_controller_utils::ScopedLocalControllerParamNode> local_controller_param_scope_;
   /** @brief True if the controller uses the external contact sensors */
   bool use_contact_sensors_;
   /** @brief If true, use the last effort command as effort state for estimation. */
@@ -201,6 +210,10 @@ private:
   Eigen::Quaterniond tmp_quat_;
   Eigen::Vector3d tmp_gyro_;
   Eigen::Vector3d tmp_acc_;
+  /** @brief Last valid IMU sample, kept across missed handle reads. */
+  Eigen::Quaterniond last_imu_quat_ = Eigen::Quaterniond::Identity();
+  Eigen::Vector3d last_imu_gyro_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d last_imu_acc_ = Eigen::Vector3d::Zero();
 
   /**
      * @brief thread body for the odometry publisher

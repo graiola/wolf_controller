@@ -252,6 +252,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
 {
 
   prev_time_ = get_node()->get_clock()->now();
+  local_controller_param_scope_ = std::make_unique<ScopedLocalControllerParamNode>(get_node());
 
   std::string urdf, srdf;
   std::string input_device = "keyboard";
@@ -331,6 +332,14 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
 {
   // Reserve space for joint handles
   joint_handles_.reserve(controller_->getJointNames().size());
+  last_effort_commands_.clear();
+  last_effort_commands_.reserve(controller_->getJointNames().size());
+  last_joint_positions_.clear();
+  last_joint_positions_.reserve(controller_->getJointNames().size());
+  last_joint_velocities_.clear();
+  last_joint_velocities_.reserve(controller_->getJointNames().size());
+  last_joint_efforts_.clear();
+  last_joint_efforts_.reserve(controller_->getJointNames().size());
 
   for (const auto &joint_name : controller_->getJointNames())
   {
@@ -400,6 +409,17 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
             std::ref(*effort_state_handle),
             std::ref(*effort_command_handle),
             joint_name});
+
+    // Mirror ROS1 getCommand() semantics by caching the last written command locally.
+    // Jazzy ros2_control does not guarantee command interface readback behaves as controller feedback.
+    const auto effort_state = effort_state_handle->get_optional();
+    const auto position_state = position_handle->get_optional();
+    const auto velocity_state = velocity_handle->get_optional();
+
+    last_joint_positions_.push_back(position_state.value_or(0.0));
+    last_joint_velocities_.push_back(velocity_state.value_or(0.0));
+    last_joint_efforts_.push_back(effort_state.value_or(0.0));
+    last_effort_commands_.push_back(effort_state.value_or(0.0));
   }
 
   // Handle IMU state interfaces
@@ -448,12 +468,23 @@ void WolfController::readJoints()
 {
   for (unsigned int i = 0; i < joint_handles_.size(); i++)
   {
-    double effort_for_estimation = joint_handles_[i].effort_state_.get().get_value();
-    if (use_effort_command_for_estimation_)
-      effort_for_estimation = joint_handles_[i].effort_command_.get().get_value();
+    const auto position_state = joint_handles_[i].position_state_.get().get_optional();
+    const auto velocity_state = joint_handles_[i].velocity_state_.get().get_optional();
+    const auto effort_state = joint_handles_[i].effort_state_.get().get_optional();
 
-    controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_handles_[i].position_state_.get().get_value());
-    controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_handles_[i].velocity_state_.get().get_value());
+    if (position_state.has_value())
+      last_joint_positions_[i] = position_state.value();
+    if (velocity_state.has_value())
+      last_joint_velocities_[i] = velocity_state.value();
+    if (effort_state.has_value())
+      last_joint_efforts_[i] = effort_state.value();
+
+    double effort_for_estimation = last_joint_efforts_[i];
+    if (use_effort_command_for_estimation_)
+      effort_for_estimation = last_effort_commands_[i];
+
+    controller_->setJointPosition(i+FLOATING_BASE_DOFS,last_joint_positions_[i]);
+    controller_->setJointVelocity(i+FLOATING_BASE_DOFS,last_joint_velocities_[i]);
     controller_->setJointAcceleration(i+FLOATING_BASE_DOFS,0.0); // FIXME
     controller_->setJointEffort(i+FLOATING_BASE_DOFS,effort_for_estimation);
   }
@@ -461,22 +492,55 @@ void WolfController::readJoints()
 
 void WolfController::readImu()
 {
-  tmp_quat_.w() = imu_handle_->orientation_w_.get().get_value();
-  tmp_quat_.x() = imu_handle_->orientation_x_.get().get_value();
-  tmp_quat_.y() = imu_handle_->orientation_y_.get().get_value();
-  tmp_quat_.z() = imu_handle_->orientation_z_.get().get_value();
+  bool imu_sample_complete = true;
 
-  tmp_gyro_.x() = imu_handle_->angular_velocity_x_.get().get_value();
-  tmp_gyro_.y() = imu_handle_->angular_velocity_y_.get().get_value();
-  tmp_gyro_.z() = imu_handle_->angular_velocity_z_.get().get_value();
+  const auto orientation_w = imu_handle_->orientation_w_.get().get_optional();
+  const auto orientation_x = imu_handle_->orientation_x_.get().get_optional();
+  const auto orientation_y = imu_handle_->orientation_y_.get().get_optional();
+  const auto orientation_z = imu_handle_->orientation_z_.get().get_optional();
+  const auto angular_velocity_x = imu_handle_->angular_velocity_x_.get().get_optional();
+  const auto angular_velocity_y = imu_handle_->angular_velocity_y_.get().get_optional();
+  const auto angular_velocity_z = imu_handle_->angular_velocity_z_.get().get_optional();
+  const auto linear_acceleration_x = imu_handle_->linear_acceleration_x_.get().get_optional();
+  const auto linear_acceleration_y = imu_handle_->linear_acceleration_y_.get().get_optional();
+  const auto linear_acceleration_z = imu_handle_->linear_acceleration_z_.get().get_optional();
 
-  tmp_acc_.x() = imu_handle_->linear_acceleration_x_.get().get_value();
-  tmp_acc_.y() = imu_handle_->linear_acceleration_y_.get().get_value();
-  tmp_acc_.z() = imu_handle_->linear_acceleration_z_.get().get_value();
+  imu_sample_complete &= orientation_w.has_value();
+  imu_sample_complete &= orientation_x.has_value();
+  imu_sample_complete &= orientation_y.has_value();
+  imu_sample_complete &= orientation_z.has_value();
+  imu_sample_complete &= angular_velocity_x.has_value();
+  imu_sample_complete &= angular_velocity_y.has_value();
+  imu_sample_complete &= angular_velocity_z.has_value();
+  imu_sample_complete &= linear_acceleration_x.has_value();
+  imu_sample_complete &= linear_acceleration_y.has_value();
+  imu_sample_complete &= linear_acceleration_z.has_value();
 
-  controller_->setImuOrientation(tmp_quat_);
-  controller_->setImuGyroscope(tmp_gyro_);
-  controller_->setImuAccelerometer(tmp_acc_);
+  if (imu_sample_complete)
+  {
+    last_imu_quat_.w() = orientation_w.value();
+    last_imu_quat_.x() = orientation_x.value();
+    last_imu_quat_.y() = orientation_y.value();
+    last_imu_quat_.z() = orientation_z.value();
+    last_imu_gyro_.x() = angular_velocity_x.value();
+    last_imu_gyro_.y() = angular_velocity_y.value();
+    last_imu_gyro_.z() = angular_velocity_z.value();
+    last_imu_acc_.x() = linear_acceleration_x.value();
+    last_imu_acc_.y() = linear_acceleration_y.value();
+    last_imu_acc_.z() = linear_acceleration_z.value();
+  }
+  else
+  {
+    RCLCPP_WARN_THROTTLE(
+      get_node()->get_logger(),
+      *get_node()->get_clock(),
+      2000,
+      "IMU state interfaces temporarily unavailable; reusing last valid sample.");
+  }
+
+  controller_->setImuOrientation(last_imu_quat_);
+  controller_->setImuGyroscope(last_imu_gyro_);
+  controller_->setImuAccelerometer(last_imu_acc_);
 }
 
 controller_interface::return_type WolfController::update(const rclcpp::Time & time, const rclcpp::Duration & period)
@@ -519,7 +583,22 @@ controller_interface::return_type WolfController::update(const rclcpp::Time & ti
 
   // Write to the hardware interface
   for (unsigned int i = 0; i < joint_handles_.size(); i++)
-    joint_handles_[i].effort_command_.get().set_value(controller_->getDesiredJointEfforts()(i+FLOATING_BASE_DOFS));
+  {
+    const double desired_effort = controller_->getDesiredJointEfforts()(i + FLOATING_BASE_DOFS);
+    if (joint_handles_[i].effort_command_.get().set_value(desired_effort))
+    {
+      last_effort_commands_[i] = desired_effort;
+    }
+    else
+    {
+      RCLCPP_WARN_THROTTLE(
+        get_node()->get_logger(),
+        *get_node()->get_clock(),
+        2000,
+        "Failed to write effort command for joint '%s'; keeping last applied effort for estimation.",
+        joint_handles_[i].name_.c_str());
+    }
+  }
 
   // Publish
   ros_wrapper_->publish(time,period);
