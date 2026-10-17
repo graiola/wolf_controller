@@ -460,35 +460,77 @@ void WolfController::readJoints()
 {
   for (unsigned int i = 0; i < joint_handles_.size(); i++)
   {
-    double effort_for_estimation = joint_handles_[i].effort_state_.get().get_value();
+    double effort_for_estimation = 0.0;
     if (use_effort_command_for_estimation_)
-      effort_for_estimation = joint_handles_[i].effort_command_.get().get_value();
+    {
+      double cmd = joint_handles_[i].effort_command_.get().get_value();
+      if (std::isfinite(cmd))
+        effort_for_estimation = cmd;
+      else
+      {
+        double st = joint_handles_[i].effort_state_.get().get_value();
+        if (std::isfinite(st))
+          effort_for_estimation = st;
+      }
+    }
+    else
+    {
+      double st = joint_handles_[i].effort_state_.get().get_value();
+      if (std::isfinite(st))
+        effort_for_estimation = st;
+    }
 
-    controller_->setJointPosition(i+FLOATING_BASE_DOFS,joint_handles_[i].position_state_.get().get_value());
-    controller_->setJointVelocity(i+FLOATING_BASE_DOFS,joint_handles_[i].velocity_state_.get().get_value());
-    controller_->setJointAcceleration(i+FLOATING_BASE_DOFS,0.0); // FIXME
-    controller_->setJointEffort(i+FLOATING_BASE_DOFS,effort_for_estimation);
+    double pos = joint_handles_[i].position_state_.get().get_value();
+    double vel = joint_handles_[i].velocity_state_.get().get_value();
+    if (std::isfinite(pos))
+      controller_->setJointPosition(i+FLOATING_BASE_DOFS, pos);
+    if (std::isfinite(vel))
+      controller_->setJointVelocity(i+FLOATING_BASE_DOFS, vel);
+    controller_->setJointAcceleration(i+FLOATING_BASE_DOFS, 0.0); // FIXME
+    controller_->setJointEffort(i+FLOATING_BASE_DOFS, effort_for_estimation);
   }
 }
 
 void WolfController::readImu()
 {
-  tmp_quat_.w() = imu_handle_->orientation_w_.get().get_value();
-  tmp_quat_.x() = imu_handle_->orientation_x_.get().get_value();
-  tmp_quat_.y() = imu_handle_->orientation_y_.get().get_value();
-  tmp_quat_.z() = imu_handle_->orientation_z_.get().get_value();
+  double qw = imu_handle_->orientation_w_.get().get_value();
+  double qx = imu_handle_->orientation_x_.get().get_value();
+  double qy = imu_handle_->orientation_y_.get().get_value();
+  double qz = imu_handle_->orientation_z_.get().get_value();
+  if (std::isfinite(qw) && std::isfinite(qx) && std::isfinite(qy) && std::isfinite(qz))
+  {
+    tmp_quat_.w() = qw;
+    tmp_quat_.x() = qx;
+    tmp_quat_.y() = qy;
+    tmp_quat_.z() = qz;
+    if (tmp_quat_.norm() > 1e-4)
+    {
+      tmp_quat_.normalize();
+      controller_->setImuOrientation(tmp_quat_);
+    }
+  }
 
-  tmp_gyro_.x() = imu_handle_->angular_velocity_x_.get().get_value();
-  tmp_gyro_.y() = imu_handle_->angular_velocity_y_.get().get_value();
-  tmp_gyro_.z() = imu_handle_->angular_velocity_z_.get().get_value();
+  double gx = imu_handle_->angular_velocity_x_.get().get_value();
+  double gy = imu_handle_->angular_velocity_y_.get().get_value();
+  double gz = imu_handle_->angular_velocity_z_.get().get_value();
+  if (std::isfinite(gx) && std::isfinite(gy) && std::isfinite(gz))
+  {
+    tmp_gyro_.x() = gx;
+    tmp_gyro_.y() = gy;
+    tmp_gyro_.z() = gz;
+    controller_->setImuGyroscope(tmp_gyro_);
+  }
 
-  tmp_acc_.x() = imu_handle_->linear_acceleration_x_.get().get_value();
-  tmp_acc_.y() = imu_handle_->linear_acceleration_y_.get().get_value();
-  tmp_acc_.z() = imu_handle_->linear_acceleration_z_.get().get_value();
-
-  controller_->setImuOrientation(tmp_quat_);
-  controller_->setImuGyroscope(tmp_gyro_);
-  controller_->setImuAccelerometer(tmp_acc_);
+  double ax = imu_handle_->linear_acceleration_x_.get().get_value();
+  double ay = imu_handle_->linear_acceleration_y_.get().get_value();
+  double az = imu_handle_->linear_acceleration_z_.get().get_value();
+  if (std::isfinite(ax) && std::isfinite(ay) && std::isfinite(az))
+  {
+    tmp_acc_.x() = ax;
+    tmp_acc_.y() = ay;
+    tmp_acc_.z() = az;
+    controller_->setImuAccelerometer(tmp_acc_);
+  }
 }
 
 controller_interface::return_type WolfController::update(const rclcpp::Time & time, const rclcpp::Duration & period)
