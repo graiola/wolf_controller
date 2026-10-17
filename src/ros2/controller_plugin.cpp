@@ -61,6 +61,7 @@ WolfController::WolfController()
 WolfController::~WolfController()
 {
   stopping_ = true;
+  scoped_param_node_.reset();
   odom_publisher_thread_->join();
 }
 
@@ -250,6 +251,7 @@ controller_interface::InterfaceConfiguration WolfController::state_interface_con
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfController::on_configure(const rclcpp_lifecycle::State &previous_state)
 {
+  scoped_param_node_ = std::make_unique<ScopedLocalControllerParamNode>(get_node());
 
   prev_time_ = get_node()->get_clock()->now();
 
@@ -262,7 +264,17 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WolfCo
   std::string ns = get_node()->get_namespace();
   if (ns == "/")
     ns.clear();
-  robot_name_         = get_string_parameter_from_remote_node(ns + "/robot_description/robot_name");
+  if (get_node()->has_parameter("robot_name"))
+    get_node()->get_parameter("robot_name", robot_name_);
+  if (robot_name_.empty())
+    robot_name_         = get_string_parameter_from_remote_node(ns + "/robot_description/robot_name");
+  if (robot_name_.empty())
+  {
+    std::string clean_ns = ns;
+    while (!clean_ns.empty() && clean_ns.front() == '/')
+      clean_ns.erase(0, 1);
+    robot_name_ = clean_ns;
+  }
   tf_prefix_          = get_node()->get_parameter("tf_prefix").as_string();
   urdf                = get_string_parameter_from_remote_node(ns + "/robot_description/description");
   srdf                = get_string_parameter_from_remote_node(ns + "/robot_description_semantic/description");
@@ -484,6 +496,10 @@ controller_interface::return_type WolfController::update(const rclcpp::Time & ti
 
   // NOTE: This has to be done here because the controller's lifecycle node state has to be ACTIVE in order
   // to retrieve the ROS params in the task wrappers
+  if (!scoped_param_node_)
+  {
+    scoped_param_node_ = std::make_unique<ScopedLocalControllerParamNode>(get_node());
+  }
   controller_->getIDProblem()->init(robot_name_,period_);
 
   /*auto logger = get_node()->get_logger();

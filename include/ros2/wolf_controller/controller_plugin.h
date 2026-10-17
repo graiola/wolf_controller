@@ -22,6 +22,7 @@
 #include <wolf_controller/devices/interface.h>
 #include <wolf_controller/controller_wrapper.h>
 #include <wolf_controller_utils/tools.h>
+#include <wolf_controller_utils/ros2_param_getter.h>
 
 // Eigen
 #include <Eigen/Geometry>
@@ -201,6 +202,7 @@ private:
   Eigen::Quaterniond tmp_quat_;
   Eigen::Vector3d tmp_gyro_;
   Eigen::Vector3d tmp_acc_;
+  std::unique_ptr<wolf_controller_utils::ScopedLocalControllerParamNode> scoped_param_node_;
 
   /**
      * @brief thread body for the odometry publisher

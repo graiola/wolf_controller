@@ -26,7 +26,7 @@
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>
   <depend>wolf_controller_utils</depend>
-  <depend>wolf_hardware_interface</depend>
+  <depend condition="$ROS_VERSION == 1">wolf_hardware_interface</depend>
   <depend>wolf_controller_core</depend>
   <depend>wolf_wbid</depend>
   <depend>wolf_msgs</depend>

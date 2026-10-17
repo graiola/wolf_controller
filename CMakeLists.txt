@@ -26,6 +26,7 @@ find_package(pluginlib REQUIRED)
 if(${catkin_FOUND})
     set(ROS_VERSION "ros")
     catkin_package(INCLUDE_DIRS include LIBRARIES wolf_controller CATKIN_DEPENDS controller_interface)
+    find_package(wolf_hardware_interface REQUIRED)
     add_definitions(-DROS)
     message(STATUS "Add ROS definition")
 elseif(${ament_cmake_FOUND})
@@ -49,7 +50,6 @@ find_package(controller_interface REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(rviz_visual_tools REQUIRED)
 find_package(wolf_controller_utils REQUIRED)
-find_package(wolf_hardware_interface REQUIRED)
 find_package(wolf_controller_core REQUIRED)
 find_package(wolf_wbid REQUIRED)
 find_package(wolf_msgs REQUIRED)
@@ -74,6 +74,10 @@ if (${ddynamic_reconfigure_FOUND})
 else()
     message(STATUS "ddynamic_reconfigure not found.")
 endif()
+
+include_directories(BEFORE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/${ROS_VERSION}
+)
 
 include_directories(
     /opt/ros/$ENV{ROS_DISTRO}/include/kdl_parser/  # FIX FOR ROS HUMBLE
@@ -136,7 +140,6 @@ elseif(${ament_cmake_FOUND})
         wolf_controller_core
         wolf_controller_utils
         wolf_estimation
-        wolf_hardware_interface
         wolf_msgs
         wolf_wbid
     )
@@ -232,7 +235,6 @@ if(${ament_cmake_FOUND})
         wolf_controller_core
         wolf_controller_utils
         wolf_estimation
-        wolf_hardware_interface
         wolf_msgs
         wolf_wbid
     )
