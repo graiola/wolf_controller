@@ -223,6 +223,10 @@ install(PROGRAMS scripts/${ROS_VERSION}/keyboard_node
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME})
 
 if(${ament_cmake_FOUND})
+    if(BUILD_TESTING)
+        find_package(ament_cmake_pytest REQUIRED)
+        ament_add_pytest_test(ros2_bringup_test test/test_ros2_bringup.py)
+    endif()
     pluginlib_export_plugin_description_file(controller_interface wolf_controller_plugin.xml)
     ament_export_dependencies(
         builtin_interfaces

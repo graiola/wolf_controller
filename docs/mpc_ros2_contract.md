@@ -5,6 +5,52 @@ The ROS 2 controller accepts the embedded `wolf_planner` through its existing
 the planned-contact API and named postural reference receiver are coordinated
 changes. Starting the controller alone keeps the WPG workflow.
 
+## Combined ROS 2 bringup
+
+The ROS 2 entry point can include the planner next to the controller:
+
+```bash
+ros2 launch wolf_controller wolf_controller_bringup.launch.xml \
+  robot_model:=spot robot_name:=spot1 launch_planner:=true \
+  planner_type:=default planner_autostart:=false use_sim_time:=true
+```
+
+`launch_planner` defaults to `false`; controller-only bringup does not resolve or
+load the planner package. With it enabled, the include uses the planner's ROS 2
+`launch_planner.launch.py`. Both launches apply `robot_name` once, so the example
+places the controller and planner in `/spot1`. An empty `robot_name` uses `/`.
+`use_sim_time` reaches the planner and the controller bringup nodes. The robot
+state publisher uses the relative `joint_states` topic within that namespace and
+an empty TF prefix when the namespace is empty. The delayed controller spawner
+declares its namespace and clock explicitly, preserving them after the enclosing
+launch group has exited.
+
+| Bringup argument | Planner setting |
+| --- | --- |
+| `planner_type` | `default` or `adaptive`; default is `default` |
+| `planner_autostart` | `autostart`; default is `false` |
+| `planner_params_file` | Additional ROS 2 parameter YAML, applied last |
+| `planner_urdf_file` | Override the generated model URDF |
+| `planner_task_file` | Override `task.info` |
+| `planner_reference_file` | Override `reference.info` |
+| `planner_gait_file` | Override `gait.info` |
+
+Empty file overrides use the bundled configuration for `robot_model`. The
+additional parameter YAML has the same precedence as the standalone planner
+launch: values in that file override launch-provided parameters, including
+`autostart` and `use_sim_time` if present. Controller parameters continue to use
+the separate `controller_params` and `controller_params_file` arguments.
+
+Starting the planner leaves MPC entry manual by default. Setting
+`planner_autostart:=true` enables the planner's existing guarded start sequence;
+it still waits for ACTIVE controller state, compatible observations and a valid
+reference stream. The controller's existing startup timers remain unchanged.
+
+The keyboard executable is the installed `scripts/ros2/keyboard_node` Python
+program using `rclpy`; `plot_node` is built from `src/ros2/plot_node.cpp` in an
+ament build. ROS 2 launch, keyboard Python imports and launch-test dependencies
+are declared in `package.xml`.
+
 ## Observation
 
 `wolf_controller/mpc_observation` is a relative topic in the robot namespace,
@@ -105,7 +151,33 @@ rejection, entry prerequisites, active timeout stops and cancellation of a
 deferred EXT request. Build it directly with C++17, or enable
 `BUILD_TESTING` in the package build.
 
-The coordinated migration still requires a ROS 2 Humble/Jazzy package build and
-simulation checks for standing, both diagonal phases, controller pause/restart,
-invalid observations, planner loss and the actual emergency transition. Do not
-infer robot readiness from the standalone contract tests.
+`test/test_ros2_bringup.py` expands the actual XML launch and installed planner
+Python launch with ROS 2 launch APIs. It resolves the installed Wolf keyboard,
+plot and planner executables but starts no processes. Only the external
+robot-description/world launch and xacro result are fixtures. A real
+`LaunchService` executes deferred timer events with their delays set to zero in
+the test, preserving the native group-scope behavior. Run it in the matching
+built and sourced planner workspace:
+
+```bash
+colcon test --packages-select wolf_controller
+colcon test-result --verbose
+# Or run just the launch regression against the sourced install:
+python3 -m pytest -q src/planner/wolf_controller/test/test_ros2_bringup.py
+```
+
+Bringup migration validation on 2026-11-24:
+
+| Check | Result |
+| --- | --- |
+| Native ament configure and registered `ros2_bringup_test` CTest entry | **PASS: 1/1 CTest entry** |
+| Native Humble launch expansion (`launch`/`launch_xml` 1.0.16, `launch_ros` 0.19.14) | **PASS: 10 tests** |
+| Empty, single-component and nested namespaces; shared simulation/wall-clock choice, including the deferred controller spawner | **PASS** |
+| Default/adaptive selection, manual/autostart entry setting, bundled Go1 files, explicit file/YAML overrides | **PASS** |
+| Controller-only path without resolving the optional planner; installed ROS 2 Wolf executable names | **PASS** |
+| Simulator or hardware process launch, DDS transport, dynamic controller activation and keyboard GUI interaction in this bringup test | **NOT_RUN** |
+
+Simulator checks for standing, both diagonal phases, controller pause/restart,
+invalid observations, planner loss and the actual emergency transition remain
+separate acceptance work. The launch regression and standalone contract tests
+do not establish robot readiness or ROS 2 Jazzy compatibility.

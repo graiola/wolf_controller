@@ -33,6 +33,20 @@
   <depend>geometry_msgs</depend>
   <depend>pluginlib</depend>
 
+  <!-- ROS 2 XML bringup and the installed Python keyboard node. -->
+  <exec_depend condition="$ROS_VERSION == 2">ament_index_python</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">launch</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">launch_ros</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">launch_xml</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">rclpy</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">std_msgs</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">python3-numpy</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">python3-pygame</exec_depend>
+
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_pytest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">wolf_planner</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">python3-yaml</test_depend>
+
   <depend condition="$ddynamic_reconfigure_FOUND == True">ddynamic_reconfigure</depend>
   <depend condition="$rt_logger_FOUND == True">rt_logger</depend>
 
