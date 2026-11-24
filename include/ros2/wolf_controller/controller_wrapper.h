@@ -10,6 +10,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <realtime_tools/realtime_publisher.h>
+#include <realtime_tools/realtime_buffer.h>
 #include <std_srvs/srv/trigger.hpp>
 
 // Eigen
@@ -30,6 +31,10 @@
 
 // WoLF
 #include <wolf_controller_core/controller_core.h>
+#include <wolf_controller/mpc_contract.h>
+
+#include <atomic>
+#include <chrono>
 
 // DDYNAMIC RECONFIGURE
 #ifdef DDYNAMIC_RECONFIGURE
@@ -90,6 +95,9 @@ public:
 
     void publish(const rclcpp::Time& time, const rclcpp::Duration& period);
 
+    // Called on the controller thread before ControllerCore::update().
+    void updateExternalReferences();
+
 protected:
 
     /** @brief Real time publisher - controller state */
@@ -106,6 +114,21 @@ protected:
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::CapturePoint>> capture_point_pub_;
     /** @brief Real time publisher - MPC observation */
     std::shared_ptr<realtime_tools::RealtimePublisher<wolf_msgs::msg::MpcObservation>> mpc_observation_pub_;
+
+    struct ContactReference {
+      std::array<bool, wolf_controller::mpc_contract::kContactCount> states{};
+      std::chrono::steady_clock::time_point received{};
+      bool valid{false};
+    };
+    realtime_tools::RealtimeBuffer<ContactReference> contact_reference_;
+    rclcpp::Subscription<wolf_msgs::msg::ContactForces>::SharedPtr contact_reference_sub_;
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr mpc_parameters_callback_;
+    double contact_reference_timeout_{0.25};
+    std::atomic<bool> contact_reference_adopted_{false};
+    bool contact_watchdog_stopped_{false};
+    std::vector<std::string> mpc_contact_names_;
+    std::array<std::size_t, wolf_controller::mpc_contract::kJointCount> mpc_joint_indices_{};
+    double mpc_time_{0.0};
     /** @brief Controller pnt */
     wolf_controller::ControllerCore* controller_;
     /** @brief ROS services */

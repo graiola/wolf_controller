@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
 project(wolf_controller)
 
+if(BUILD_TESTING)
+    enable_testing()
+    add_executable(mpc_contract_test test/mpc_contract_test.cpp)
+    target_include_directories(mpc_contract_test PRIVATE include/ros2)
+    target_compile_features(mpc_contract_test PRIVATE cxx_std_17)
+    add_test(NAME mpc_contract_test COMMAND mpc_contract_test)
+endif()
+
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++17" COMPILER_SUPPORTS_CXX17)
 check_cxx_compiler_flag("-std=c++14" COMPILER_SUPPORTS_CXX14)

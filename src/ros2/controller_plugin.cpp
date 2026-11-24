@@ -573,6 +573,7 @@ controller_interface::return_type WolfController::update(const rclcpp::Time & ti
   readImu();
 
   // Update controller core
+  ros_wrapper_->updateExternalReferences();
   controller_->update(period_);
 
   // Write to the hardware interface

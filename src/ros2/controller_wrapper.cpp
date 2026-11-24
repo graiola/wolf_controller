@@ -28,6 +28,13 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   controller_node->declare_parameter<std::vector<std::string>>("robot_foot_names", controller_ptr->getRobotModel()->getFootNames());
   controller_node->declare_parameter<std::vector<std::string>>("robot_arm_names", controller_ptr->getRobotModel()->getArmNames());
   controller_node->declare_parameter<std::string>("robot_imu_name", controller_ptr->getRobotModel()->getImuSensorName());
+  if (!controller_node->has_parameter("mpc_contract_version"))
+    controller_node->declare_parameter<int>("mpc_contract_version", 2);
+  if (!controller_node->has_parameter("mpc_world_frame"))
+    controller_node->declare_parameter<std::string>("mpc_world_frame", WORLD_FRAME_NAME);
+  if (controller_node->get_parameter("mpc_contract_version").as_int() != 2 ||
+      controller_node->get_parameter("mpc_world_frame").as_string() != WORLD_FRAME_NAME)
+    throw std::invalid_argument("The MPC transport requires contract version 2 in the world frame");
 
   // Defaults
   double default_duty_factor = 0.3;
@@ -352,7 +359,7 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   unsigned int n_contacts = controller_->getRobotModel()->getContactNames().size();
   auto contact_forces_pub = controller_node->create_publisher<wolf_msgs::msg::ContactForces>("wolf_controller/contact_forces", rclcpp::QoS(4));
   contact_forces_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::ContactForces>>(contact_forces_pub);
-  contact_forces_pub_->msg_.header.frame_id = controller_ptr->getRobotModel()->getBaseLinkName();
+  contact_forces_pub_->msg_.header.frame_id = WORLD_FRAME_NAME;
   contact_forces_pub_->msg_.name.resize(n_contacts);
   contact_forces_pub_->msg_.contact.resize(n_contacts);
   contact_forces_pub_->msg_.des_contact.resize(n_contacts);
@@ -396,13 +403,102 @@ ControllerRosWrapper::ControllerRosWrapper(rclcpp_lifecycle::LifecycleNode::Shar
   controller_state_pub_->msg_.modes = controller_->getModesAsString();
   controller_state_pub_->msg_.current_mode = controller_->getModeAsString();
 
-  // MPC observation
-  auto mpc_observation_pub = controller_node->create_publisher<wolf_msgs::msg::MpcObservation>("wolf_controller/mpc_observation", rclcpp::QoS(4));
-  mpc_observation_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::MpcObservation>>(mpc_observation_pub);
-  mpc_observation_pub_->msg_.state.value.resize(24);
-  mpc_observation_pub_->msg_.input.value.resize(48);
-  mpc_observation_pub_->msg_.time = 0.0;
-  mpc_observation_pub_->msg_.mode = 0;
+  // The centroidal observation has 24 states and 24 inputs. Resolve model
+  // indices once, so arm joints and URDF traversal order cannot shift leg data.
+  using namespace wolf_controller::mpc_contract;
+  auto* model = controller_->getRobotModel();
+  const auto string_list = [&controller_node](const std::string& name,
+                                             const std::vector<std::string>& fallback) {
+    if (!controller_node->has_parameter(name))
+      controller_node->declare_parameter<std::vector<std::string>>(name, fallback);
+    return controller_node->get_parameter(name).as_string_array();
+  };
+  try {
+    if (!std::isfinite(model->getMass()) || model->getMass() <= 0.0)
+      throw std::invalid_argument("MPC requires a positive finite robot mass");
+    const auto contact_defaults = controller_node->has_parameter("mpc_contact_names")
+        ? std::vector<std::string>{} : canonicalLegOrder(model->getFootNames());
+    mpc_contact_names_ = string_list("mpc_contact_names", contact_defaults);
+    if (mpc_contact_names_.size() != kContactCount || !uniqueNames(mpc_contact_names_))
+      throw std::invalid_argument("mpc_contact_names must contain four distinct LF,LH,RF,RH feet");
+    for (const auto& name : mpc_contact_names_)
+      if (std::find(model->getFootNames().begin(), model->getFootNames().end(), name) == model->getFootNames().end())
+        throw std::invalid_argument("Unknown MPC foot: " + name);
+
+    std::vector<std::string> joint_defaults;
+    if (!controller_node->has_parameter("mpc_joint_names")) {
+      for (const auto& leg : canonicalLegOrder(model->getLegNames())) {
+        for (const auto index : model->getLimbJointsIds(leg)) {
+          const auto& names = model->getJointNames();
+          const auto name = std::find_if(names.begin(), names.end(), [model, index](const std::string& value) {
+            return model->getJointIndex(value) == static_cast<int>(index);
+          });
+          if (name == names.end())
+            throw std::invalid_argument("MPC leg joint index is absent from the model");
+          joint_defaults.push_back(*name);
+        }
+      }
+    }
+    const auto joint_names = string_list("mpc_joint_names", joint_defaults);
+    if (joint_names.size() != kJointCount || !uniqueNames(joint_names))
+      throw std::invalid_argument("mpc_joint_names must contain twelve distinct leg joints in planner order");
+    std::vector<unsigned int> leg_joint_indices;
+    for (const auto& leg : model->getLegNames()) {
+      const auto& indices = model->getLimbJointsIds(leg);
+      leg_joint_indices.insert(leg_joint_indices.end(), indices.begin(), indices.end());
+    }
+    for (std::size_t i = 0; i < joint_names.size(); ++i) {
+      const int index = model->getJointIndex(joint_names[i]);
+      if (index < FLOATING_BASE_DOFS || index >= static_cast<int>(model->getJointNum()) ||
+          std::find(leg_joint_indices.begin(), leg_joint_indices.end(), static_cast<unsigned int>(index)) == leg_joint_indices.end())
+        throw std::invalid_argument("Unknown or invalid MPC joint: " + joint_names[i]);
+      mpc_joint_indices_[i] = static_cast<std::size_t>(index);
+    }
+    auto publisher = controller_node->create_publisher<wolf_msgs::msg::MpcObservation>(
+        "wolf_controller/mpc_observation", rclcpp::QoS(1));
+    mpc_observation_pub_ = std::make_shared<realtime_tools::RealtimePublisher<wolf_msgs::msg::MpcObservation>>(publisher);
+    mpc_observation_pub_->msg_.state.value.resize(kStateSize);
+    mpc_observation_pub_->msg_.input.value.resize(kInputSize);
+  } catch (const std::exception& error) {
+    // A robot without the centroidal MPC contract may still use the normal WPG.
+    RCLCPP_WARN(controller_node->get_logger(), "MPC observation disabled: %s", error.what());
+  }
+
+  if (!controller_node->has_parameter("mpc_contact_reference_timeout"))
+    controller_node->declare_parameter<double>("mpc_contact_reference_timeout", 0.25);
+  contact_reference_timeout_ = controller_node->get_parameter("mpc_contact_reference_timeout").as_double();
+  if (!std::isfinite(contact_reference_timeout_) || contact_reference_timeout_ <= 0.0)
+    throw std::invalid_argument("mpc_contact_reference_timeout must be finite and positive");
+  mpc_parameters_callback_ = controller_node->add_on_set_parameters_callback(
+      [](const std::vector<rclcpp::Parameter>& parameters) {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        for (const auto& parameter : parameters) {
+          const auto& name = parameter.get_name();
+          if (name == "mpc_contract_version" || name == "mpc_world_frame" ||
+              name == "mpc_joint_names" || name == "mpc_contact_names" ||
+              name == "mpc_contact_reference_timeout") {
+            result.successful = false;
+            result.reason = "The MPC contract is fixed while the controller is configured";
+            break;
+          }
+        }
+        return result;
+      });
+  contact_reference_.initRT(ContactReference{});
+  const auto feet = model->getFootNames();
+  contact_reference_sub_ = controller_node->create_subscription<wolf_msgs::msg::ContactForces>(
+      "wolf_controller/reference/contacts", rclcpp::QoS(1),
+      [this, feet, logger = controller_node->get_logger()](wolf_msgs::msg::ContactForces::ConstSharedPtr msg) {
+        ContactReference reference;
+        if (!reorderContacts(feet, msg->name, msg->des_contact, reference.states)) {
+          RCLCPP_WARN(logger, "Rejected invalid MPC contact reference");
+          return;
+        }
+        reference.received = std::chrono::steady_clock::now();
+        reference.valid = true;
+        contact_reference_.writeFromNonRT(reference);
+      });
   controller_->getRobotModel()->getJointPosition(tmp_vectorXd_);
 
   // DDynamic reconfigure
@@ -629,8 +725,11 @@ bool ControllerRosWrapper::decreaseStepHeightCB(const std::shared_ptr<std_srvs::
 bool ControllerRosWrapper::switchControlModeCB(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
                                                std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
-  res->success = true;
-  controller_->switchControlMode();
+  auto mode_request = std::make_shared<wolf_msgs::srv::String::Request>();
+  mode_request->data = controller_->getRequestedControlMode() == wolf_controller::ControllerCore::WPG ? "EXT" : "WPG";
+  auto mode_response = std::make_shared<wolf_msgs::srv::String::Response>();
+  setControlModeCB(mode_request, mode_response);
+  res->success = mode_response->success;
   return res->success;
 }
 
@@ -638,8 +737,23 @@ bool ControllerRosWrapper::switchControlModeCB(const std::shared_ptr<std_srvs::s
 bool ControllerRosWrapper::setControlModeCB(const std::shared_ptr<wolf_msgs::srv::String::Request> req,
                       std::shared_ptr<wolf_msgs::srv::String::Response> res)
 {
-  res->success = true;
-  controller_->selectControlMode(req->data);
+  if (req->data == "MPC" || req->data == "EXT") {
+    const auto* reference = contact_reference_.readFromNonRT();
+    const double age = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - reference->received).count();
+    const bool guarded = req->data == "MPC" || reference->valid;
+    const bool contacts_fresh = !wolf_controller::mpc_contract::contactReferenceExpired(
+        true, reference->valid, age, contact_reference_timeout_);
+    const bool ready = wolf_controller::mpc_contract::allowMpcStart(
+        controller_->getStateMachine()->getCurrentState() == wolf_controller::StateMachine::ACTIVE,
+        reference->valid, contact_reference_adopted_.load(), contacts_fresh,
+        mpc_observation_pub_ && controller_->getIDProblem()->externalMpcReferencesReady(contact_reference_timeout_));
+    if (guarded && !ready) {
+      res->success = false;
+      return false;
+    }
+  }
+  res->success = controller_->selectControlMode(req->data == "MPC" ? "EXT" : req->data);
   return res->success;
 }
 
@@ -729,6 +843,51 @@ bool ControllerRosWrapper::standDownCB(const std::shared_ptr<std_srvs::srv::Trig
   return res->success;
 }
 
+void ControllerRosWrapper::updateExternalReferences()
+{
+  const bool active = controller_->getStateMachine()->getCurrentState() == wolf_controller::StateMachine::ACTIVE;
+  const bool external = active && controller_->getControlMode() == wolf_controller::ControllerCore::EXT;
+  const bool pending_external = active && controller_->getRequestedControlMode() == wolf_controller::ControllerCore::EXT;
+  if (!external)
+    contact_watchdog_stopped_ = false;
+  if (contact_watchdog_stopped_)
+    return;
+  const auto* reference = contact_reference_.readFromRT();
+  if (!reference->valid)
+    return;  // Preserve legacy EXT clients that do not provide a contact schedule.
+  const double age = std::chrono::duration<double>(
+      std::chrono::steady_clock::now() - reference->received).count();
+  using wolf_controller::mpc_contract::WatchdogAction;
+  const bool contacts_fresh = !wolf_controller::mpc_contract::contactReferenceExpired(
+      true, reference->valid, age, contact_reference_timeout_);
+  const auto action = wolf_controller::mpc_contract::referenceWatchdogAction(
+      external, pending_external, reference->valid, contacts_fresh,
+      controller_->getIDProblem()->externalMpcReferencesReady(contact_reference_timeout_));
+  if (action != WatchdogAction::None) {
+    controller_->selectControlMode("WPG");
+    if (action == WatchdogAction::StopActive) {
+      contact_watchdog_stopped_ = true;
+      // Existing emergency stop enters ANOMALY immediately. Merely requesting
+      // WPG can wait forever for all feet to contact after a planner failure.
+      controller_->emergencyStop();
+    }
+    // A pending EXT request can wait for foot contact. Cancel it before the
+    // core update if the prepared reference set expires while still in WPG.
+    contact_reference_adopted_ = false;
+    controller_->getIDProblem()->clearPlannedContactStates();
+    return;
+  }
+  if (age <= contact_reference_timeout_) {
+    controller_->getIDProblem()->setPlannedContactStates(reference->states);
+    // The service must observe actual controller-thread adoption, not only a
+    // valid pending non-RT buffer that the RT try-lock has not consumed yet.
+    contact_reference_adopted_ = true;
+  } else if (!external) {
+    contact_reference_adopted_ = false;
+    controller_->getIDProblem()->clearPlannedContactStates();
+  }
+}
+
 void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Duration& period)
 {
 
@@ -768,6 +927,8 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
   //const std::vector<std::string>& contact_names = controller_->getRobotModel()->getContactNames();
   //std::string current_contact_name;
   const std::vector<std::string>& contact_names = controller_->getRobotModel()->getContactNames();
+  const auto& desired_contact_states = controller_->getDesiredContactStates();
+  const auto& desired_contact_forces = controller_->getDesiredContactForces();
   std::string current_contact_name;
   if(contact_forces_pub_.get() && contact_forces_pub_->trylock())
   {
@@ -776,18 +937,18 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
       current_contact_name = contact_names[i];
       contact_forces_pub_->msg_.name[i] = current_contact_name;
       contact_forces_pub_->msg_.contact[i] = controller_->getStateEstimator()->getContacts().at(current_contact_name);
-      contact_forces_pub_->msg_.des_contact[i] = controller_->getDesiredContactStates()[i];
-      contact_forces_pub_->msg_.contact_positions[i].x = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(0);
-      contact_forces_pub_->msg_.contact_positions[i].y = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(1);
-      contact_forces_pub_->msg_.contact_positions[i].z = controller_->getStateEstimator()->getContactPositionInBase().at(current_contact_name)(2);
+      contact_forces_pub_->msg_.des_contact[i] = i < desired_contact_states.size() && desired_contact_states[i];
+      contact_forces_pub_->msg_.contact_positions[i].x = controller_->getStateEstimator()->getContactPositionInWorld().at(current_contact_name)(0);
+      contact_forces_pub_->msg_.contact_positions[i].y = controller_->getStateEstimator()->getContactPositionInWorld().at(current_contact_name)(1);
+      contact_forces_pub_->msg_.contact_positions[i].z = controller_->getStateEstimator()->getContactPositionInWorld().at(current_contact_name)(2);
 
       contact_forces_pub_->msg_.contact_forces[i].force.x = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(0);
       contact_forces_pub_->msg_.contact_forces[i].force.y = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(1);
       contact_forces_pub_->msg_.contact_forces[i].force.z = controller_->getStateEstimator()->getContactForces().at(current_contact_name)(2);
 
-      contact_forces_pub_->msg_.des_contact_forces[i].force.x = controller_->getDesiredContactForces()[i](0);
-      contact_forces_pub_->msg_.des_contact_forces[i].force.y = controller_->getDesiredContactForces()[i](1);
-      contact_forces_pub_->msg_.des_contact_forces[i].force.z = controller_->getDesiredContactForces()[i](2);
+      contact_forces_pub_->msg_.des_contact_forces[i].force.x = i < desired_contact_forces.size() ? desired_contact_forces[i](0) : 0.0;
+      contact_forces_pub_->msg_.des_contact_forces[i].force.y = i < desired_contact_forces.size() ? desired_contact_forces[i](1) : 0.0;
+      contact_forces_pub_->msg_.des_contact_forces[i].force.z = i < desired_contact_forces.size() ? desired_contact_forces[i](2) : 0.0;
     }
     contact_forces_pub_->msg_.header.stamp = time;
     contact_forces_pub_->unlockAndPublish();
@@ -847,74 +1008,46 @@ void ControllerRosWrapper::publish(const rclcpp::Time& time, const rclcpp::Durat
     capture_point_pub_->unlockAndPublish();
   }
 
-   if(mpc_observation_pub_.get() && mpc_observation_pub_->trylock())
-  {
+  // Advance model time even when the realtime publisher is busy. Otherwise
+  // dropped publications make the MPC clock run slower than the controller.
+  if (std::isfinite(period.seconds()) && period.seconds() >= 0.0)
+    mpc_time_ += period.seconds();
+  else
+    mpc_time_ = 0.0;
 
+  if (mpc_observation_pub_ && mpc_observation_pub_->trylock()) {
+    using namespace wolf_controller::mpc_contract;
+    auto& message = mpc_observation_pub_->msg_;
     controller_->getRobotModel()->getCentroidalMomentum(tmp_vector6d_);
     controller_->getRobotModel()->getFloatingBasePose(tmp_affine3d_);
-    double robot_mass = controller_->getRobotModel()->getMass();
+    const double mass = controller_->getRobotModel()->getMass();
+    for (std::size_t i = 0; i < 6; ++i)
+      message.state.value[i] = tmp_vector6d_(i) / mass;
+    for (std::size_t i = 0; i < 3; ++i)
+      message.state.value[6 + i] = tmp_affine3d_.translation()(i);
 
-    // STATE
-    // linear momentum
-    mpc_observation_pub_->msg_.state.value[0] = tmp_vector6d_(0) / robot_mass;
-    mpc_observation_pub_->msg_.state.value[1] = tmp_vector6d_(1) / robot_mass;
-    mpc_observation_pub_->msg_.state.value[2] = tmp_vector6d_(2) / robot_mass;
-
-    // angular momentum
-    mpc_observation_pub_->msg_.state.value[3] = tmp_vector6d_(3) / robot_mass;
-    mpc_observation_pub_->msg_.state.value[4] = tmp_vector6d_(4) / robot_mass;
-    mpc_observation_pub_->msg_.state.value[5] = tmp_vector6d_(5) / robot_mass;
-
-    // base position
-    mpc_observation_pub_->msg_.state.value[6] = tmp_affine3d_.translation().x();
-    mpc_observation_pub_->msg_.state.value[7] = tmp_affine3d_.translation().y();
-    mpc_observation_pub_->msg_.state.value[8] = tmp_affine3d_.translation().z();
-
-    // base orientation (ZYX)
     base_rpy_ = wolf_controller_utils::rotToRpy(tmp_affine3d_.linear());
-    wolf_controller_utils::unwrap(base_rpy_prev_,base_rpy_);
-    mpc_observation_pub_->msg_.state.value[9]  = base_rpy_.z();
-    mpc_observation_pub_->msg_.state.value[10] = base_rpy_.y();
-    mpc_observation_pub_->msg_.state.value[11] = base_rpy_.x();
+    wolf_controller_utils::unwrap(base_rpy_prev_, base_rpy_);
+    message.state.value[9] = base_rpy_.z();
+    message.state.value[10] = base_rpy_.y();
+    message.state.value[11] = base_rpy_.x();
     base_rpy_prev_ = base_rpy_;
-
-    // joint positions (check the order, also be sure that we are not taking the arm joints)
     controller_->getRobotModel()->getJointPosition(tmp_vectorXd_);
-    for(unsigned int i=0; i<12; i++)
-      mpc_observation_pub_->msg_.state.value[12 + i] = tmp_vectorXd_(i+FLOATING_BASE_DOFS);
+    for (std::size_t i = 0; i < kJointCount; ++i)
+      message.state.value[12 + i] = tmp_vectorXd_(mpc_joint_indices_[i]);
 
-    // INPUT
-    // contact forces (FIXME hardcoded names and order)
-    mpc_observation_pub_->msg_.input.value[0] = controller_->getStateEstimator()->getContactForce("lf_foot").x();
-    mpc_observation_pub_->msg_.input.value[1] = controller_->getStateEstimator()->getContactForce("lf_foot").y();
-    mpc_observation_pub_->msg_.input.value[2] = controller_->getStateEstimator()->getContactForce("lf_foot").z();
-
-    mpc_observation_pub_->msg_.input.value[3] = controller_->getStateEstimator()->getContactForce("lh_foot").x();
-    mpc_observation_pub_->msg_.input.value[4] = controller_->getStateEstimator()->getContactForce("lh_foot").y();
-    mpc_observation_pub_->msg_.input.value[5] = controller_->getStateEstimator()->getContactForce("lh_foot").z();
-
-    mpc_observation_pub_->msg_.input.value[6] = controller_->getStateEstimator()->getContactForce("rf_foot").x();
-    mpc_observation_pub_->msg_.input.value[7] = controller_->getStateEstimator()->getContactForce("rf_foot").y();
-    mpc_observation_pub_->msg_.input.value[8] = controller_->getStateEstimator()->getContactForce("rf_foot").z();
-
-    mpc_observation_pub_->msg_.input.value[9]  = controller_->getStateEstimator()->getContactForce("rh_foot").x();
-    mpc_observation_pub_->msg_.input.value[10] = controller_->getStateEstimator()->getContactForce("rh_foot").y();
-    mpc_observation_pub_->msg_.input.value[11] = controller_->getStateEstimator()->getContactForce("rh_foot").z();
-
-    // joints velocities
+    std::array<bool, kContactCount> contacts{};
+    for (std::size_t i = 0; i < kContactCount; ++i) {
+      const auto& force = controller_->getStateEstimator()->getContactForce(mpc_contact_names_[i]);
+      for (std::size_t axis = 0; axis < 3; ++axis)
+        message.input.value[3 * i + axis] = force(axis);
+      contacts[i] = controller_->getStateEstimator()->getContact(mpc_contact_names_[i]);
+    }
     controller_->getRobotModel()->getJointVelocity(tmp_vectorXd_);
-    for(unsigned int i=0; i<12; i++)
-      mpc_observation_pub_->msg_.input.value[36 + i] = tmp_vectorXd_(i+FLOATING_BASE_DOFS);
-
-    // time
-    mpc_observation_pub_->msg_.time = mpc_observation_pub_->msg_.time + period.seconds();
-
-    // mode (FIXME hardcoded names)
-    mpc_observation_pub_->msg_.mode = static_cast<int8_t>(controller_->getStateEstimator()->getContact("lf_foot"))*8
-                                    + static_cast<int8_t>(controller_->getStateEstimator()->getContact("lh_foot"))*4
-                                    + static_cast<int8_t>(controller_->getStateEstimator()->getContact("rf_foot"))*2
-                                    + static_cast<int8_t>(controller_->getStateEstimator()->getContact("rh_foot"));
-
+    for (std::size_t i = 0; i < kJointCount; ++i)
+      message.input.value[kForceCount + i] = tmp_vectorXd_(mpc_joint_indices_[i]);
+    message.time = mpc_time_;
+    message.mode = encodeMode(contacts);
     mpc_observation_pub_->unlockAndPublish();
   }
 
